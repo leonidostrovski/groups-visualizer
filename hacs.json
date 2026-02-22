@@ -1,14 +1,7 @@
 {
   "name": "Groups Visualizer",
-  "content_in_root": false,
-  "zip_release": true,
   "filename": "groups-visualizer.js",
+  "content_in_root": false,
   "render_readme": true,
-  "hide_default_branch": false,
-  "documentation": "https://github.com/leonidostrovski/groups-visualizer#readme",
-  "homeassistant": "2024.9.0",
-  "codeowners": ["@leonidostrovski"],
-  "country": [],
-  "domains": [],
-  "iot_class": "local_push"
+  "homeassistant": "2024.9.0"
 }
