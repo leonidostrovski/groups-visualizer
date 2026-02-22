@@ -1,0 +1,40 @@
+{
+  "name": "groups-visualizer",
+  "version": "0.1.0",
+  "description": "A Home Assistant Lovelace card that visualizes groups as interactive, area-aware graphs.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Leonid Ostrovski",
+  "homepage": "https://github.com/<YOUR_GITHUB_USERNAME>/<REPO_NAME>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<YOUR_GITHUB_USERNAME>/<REPO_NAME>.git"
+  },
+  "main": "dist/groups-visualizer.js",
+  "module": "dist/groups-visualizer.js",
+  "files": [
+    "dist",
+    "hacs.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "d3": "^7.9.0",
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-lit": "^1.13.0",
+    "prettier": "^3.2.5",
+    "vite": "^5.2.0"
+  }
+}
