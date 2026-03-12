@@ -7,10 +7,10 @@ This project was created entirely with the assistance of AI tools.
 
 This project was initiated and maintained by:
 
-Email: leonidostrovski@gmail.com  
+Email: leonidostrovski@gmail.com
 Country: Israel
 
-All source code, architecture, optimization, and documentation were generated with the assistance of AI tools.  
+All source code, architecture, optimization, and documentation were generated with the assistance of AI tools.
 Human work was applied for integration, testing, debugging, and verification.
 
 ---
@@ -23,17 +23,45 @@ A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 
 ![Example](screenshots/example.png)
 
-`groups-visualizer` is an interactive Lovelace custom card that displays Home Assistant groups, switches, lights, fans, sensors, wrappers, and hierarchical relationships as clean area-aware graph diagrams.
+`groups-visualizer` is an interactive Lovelace custom card that displays Home Assistant groups, switches, lights, fans, sensors, and hierarchical relationships as clean area-aware graph diagrams.
 
 The card automatically reads:
 - Entity relationships
-- Areas
-- Entity registry
+- Areas and their voice aliases
+- Entity registry (labels, aliases)
 - Label registry
-- Wrapper pairs (light -> switch mappings)
-- Voice labels and aliases
+- Voice assistant names
 
 and converts them into a zoomable, multi-layer DAG graph.
+
+---
+
+## What's New in v1.1.0
+
+### Area Voice Assistant Block
+Each area box now shows a dedicated **Area voice assistant** card — a unified block with a colored header and the area's voice aliases as clickable chips. Clicking any alias copies it to clipboard.
+
+### Group Labels Card
+Each group node now has a **Group Labels** mini-card with a colored header (blue when labels are assigned, gray when none). Labels are shown as colored chips inside the white content section.
+
+### Group Voice Assistant Card
+Each group node now has a **Group voice assistant** mini-card showing the entity's registry aliases (the real voice assistant names). The header is colored purple when aliases exist, gray when none. Voice names are larger and bold for readability, and each is clickable to copy.
+
+### Improved Edge Visualization
+The dashed orange "wraps" edge label pill (which previously overlapped node cards) has been replaced with a small dot at the midpoint — keeping the spatial relationship clear without obscuring content.
+
+### Sensor Units in State Badges
+Numeric sensor values now display their unit of measurement (e.g. `6.04 A`, `21.5 °C`) directly in the state badge and in entity rows inside node cards.
+
+### Copy-on-Click for Area Elements
+- Click the area name header → copies the area name
+- Click a voice alias chip → copies the alias
+- Pen icon → opens the area edit popup (pen icon only, not the whole header)
+
+### UI Cleanup
+- Removed `[W]` / `[S]` wrapper/switch indicators from node headers
+- Consistent section styling across Labels and Voice cards
+- Cleaner section headers (no more `[BRACKETS]` debug-style labels)
 
 ---
 
@@ -50,8 +78,6 @@ and converts them into a zoomable, multi-layer DAG graph.
 ---
 
 ### Adding the Card to the Dashboard
-
-To use the Groups Visualizer, create a new dashboard view:
 
 1. Go to: **Settings > Dashboards**.
 2. Select the dashboard where the card should appear.
@@ -77,15 +103,14 @@ show_voice_labels: true
 
 ## Manual Installation (Alternative)
 
-1. Download the latest ZIP release from GitHub.
-2. Extract the `dist/` folder.
-3. Copy it into:
+1. Download the latest release from GitHub.
+2. Copy `dist/groups-visualizer.js` into:
 
 ```
 /config/www/community/groups-visualizer/
 ```
 
-4. Add this resource in Home Assistant:  
+3. Add this resource in Home Assistant:
    **Settings > Dashboards > (three dots) > Resources > Add Resource**
 
 Resource URL:
@@ -96,7 +121,7 @@ Resource URL:
 
 Type must be: **JavaScript Module**
 
-5. Add the card manually to any dashboard:
+4. Add the card manually to any dashboard:
 
 ```yaml
 type: custom:groups-visualizer
@@ -110,38 +135,37 @@ show_voice_labels: true
 
 ### Graph Visualization
 - Auto-generated graphs for groups and nested groups
-- Wrapper-pair detection (light wrapping switch)
-- Cross-area routing with corridor separation
+- Cross-area edge routing with corridor separation
 - Smooth edges and arrowheads
-- Clickable ON/OFF badges
+- Clickable ON/OFF state badges for lights, switches, fans and groups
 
 ### Area-Aware Layout
 - Nodes grouped visually by Home Assistant Areas
-- Styled area boxes (labels, stripes, glow)
-- Automatic foreignObject height measurement
-- Dagre hierarchical layout
+- Styled area boxes with name pill, node count badge, and glow effects
+- **Area voice assistant block** — voice aliases shown as chips inside each area box
+- Automatic node height measurement
+- Dagre compound hierarchical layout
+
+### Node Cards
+- Domain color-coded header (LIGHT, SWITCH, GROUP, FAN, SENSOR…)
+- Gear icon → opens entity settings dialog
+- Friendly name and entity ID (click to copy)
+- State badge with live ON/OFF/sensor value + unit of measurement
+- Member entity list with state badges (up to 10 shown)
+- **Group Labels card** — colored chips for assigned HA labels
+- **Group voice assistant card** — voice alias names (click to copy)
+
+### Live Interaction
+- Toggle entities directly from the graph (lights, switches, fans, groups)
+- Click-to-copy: entity ID, friendly name, voice aliases, area name, area aliases
+- Area pen icon → opens area edit popup with entity list and link to area settings
+- Automatic state refresh on every hass update (no full rebuild needed)
 
 ### User Interface
 - Tabs by domain (Lights, Switches, Groups, etc.)
 - Sub-tabs for each root group
 - Rebuild / Full Rebuild buttons
-- Automatic state refresh (no rebuild)
-
-### Live Interaction
-- Toggle entities directly from the graph
-- Click-to-copy:
-  - Entity ID
-  - Friendly name
-  - Voice label
-  - Aliases
-
-### Build System
-- Built using Vite
-- Produces:
-  - groups-visualizer.js (stable)
-  - groups-visualizer.<hash>.js (content-hashed)
-  - groups-visualizer.<version>.js (versioned)
-- Adds auto timestamp banner
+- Timestamp of last data fetch
 
 ---
 
@@ -149,33 +173,30 @@ show_voice_labels: true
 
 ```
 groups-visualizer/
-+-- dist/                            # Build output
-¦   +-- groups-visualizer.js
-¦   +-- groups-visualizer.<hash>.js
-¦   +-- groups-visualizer.<version>.js
-+-- src/
-¦   +-- index.js                     # Main Lovelace card (UI, tabs, rebuild)
-¦   +-- card-styles.js               # All card styles
-¦   +-- card-data.js                 # Loads states, registries, builds tab structure
-¦   +-- card-actions.js              # Rendering and state refresh
-¦   +-- ha-api.js                    # Entity utilities and helpers
-¦   +-- ha-node-table.js             # Node HTML generator
-¦   +-- graph.js                     # Graph orchestrator and canvas
-¦   +-- graph-layout.js              # Dagre layout generator
-¦   +-- graph-render.js              # SVG rendering engine
-¦   +-- graph-measure.js             # DOM height measurement engine
-¦   +-- constants.js                 # Shared constants
-+-- hacs.json                        # HACS metadata
-+-- LICENSE                          # MIT License
-+-- package.json                     # Project metadata
-+-- README.md                        # Documentation
+├── dist/
+│   └── groups-visualizer.js
+├── src/
+│   ├── index.js              # Main Lovelace card (UI, tabs, rebuild)
+│   ├── card-styles.js        # All card styles
+│   ├── card-data.js          # Loads states, registries, builds tab structure
+│   ├── card-actions.js       # Rendering and state refresh
+│   ├── ha-api.js             # Entity utilities and helpers
+│   ├── ha-node-table.js      # Node HTML generator
+│   ├── graph-layout.js       # Dagre layout generator
+│   ├── graph-render.js       # SVG rendering engine
+│   ├── graph-measure.js      # DOM height measurement engine
+│   └── constants.js          # Shared constants
+├── hacs.json
+├── LICENSE
+├── package.json
+└── README.md
 ```
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.  
+This project is licensed under the MIT License.
 See the included `LICENSE` file for full details.
 
 ---
