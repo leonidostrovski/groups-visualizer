@@ -46,7 +46,13 @@ export function buildLayout(roots, lookup, pairs, group_ids, show_voice_labels, 
     if (!area_id) return;
     const area_obj  = (registry.areas || {})[area_id];
     if (!area_obj) return;
-    if (!areaMap[area_id]) areaMap[area_id] = { name: area_obj.name || area_id, node_ids: [] };
+    if (!areaMap[area_id]) {
+      const aliases    = (Array.isArray(area_obj.aliases) ? area_obj.aliases : []).slice(0, 3);
+      const aliasRows  = Math.max(aliases.length, 1); // always at least 1 row ("None")
+      // 8px from top + lblH(â‰ˆ62) + 8px gap + aliasRows*26px + 8px before nodes
+      const topPad     = 86 + aliasRows * 26;
+      areaMap[area_id] = { name: area_obj.name || area_id, aliases, topPad, node_ids: [] };
+    }
     areaMap[area_id].node_ids.push(id);
   });
 
@@ -65,7 +71,7 @@ export function buildLayout(roots, lookup, pairs, group_ids, show_voice_labels, 
     marginy:  80
   });
 
-  // -- Cluster nodes — tell dagre the EXACT visual padding of each area box --
+  // -- Cluster nodes ï¿½ tell dagre the EXACT visual padding of each area box --
   // By setting paddingLeft/Right/Top/Bottom equal to our visual AREA_PAD values,
   // dagre knows the real visual boundary of each cluster and will route edges
   // with clearance from those boundaries, not just from the node edges.
@@ -78,7 +84,7 @@ export function buildLayout(roots, lookup, pairs, group_ids, show_voice_labels, 
       height:        1,
       paddingLeft:   AREA_PAD_X,
       paddingRight:  AREA_PAD_X,
-      paddingTop:    AREA_PAD_TOP,
+      paddingTop:    areaMap[area_id].topPad,
       paddingBottom: AREA_PAD_BOTTOM
     });
   });
