@@ -22,12 +22,13 @@ const AREA_PALETTE = [
 function _buildAreaBoxes(areaMap, finalPos) {
   const boxes = {};
   if (!areaMap) return boxes;
-  Object.entries(areaMap).forEach(([areaId, { node_ids }]) => {
+  Object.entries(areaMap).forEach(([areaId, { node_ids, topPad }]) => {
     const pos = node_ids.map(id => finalPos.get(id)).filter(Boolean);
     if (!pos.length) return;
+    const top = topPad !== undefined ? topPad : AREA_PAD_TOP;
     boxes[areaId] = {
       x1: Math.min(...pos.map(p => p.x))       - AREA_PAD_X,
-      y1: Math.min(...pos.map(p => p.y))       - AREA_PAD_TOP,
+      y1: Math.min(...pos.map(p => p.y))       - top,
       x2: Math.max(...pos.map(p => p.x + p.w)) + AREA_PAD_X,
       y2: Math.max(...pos.map(p => p.y + p.h)) + AREA_PAD_BOTTOM,
     };
@@ -306,18 +307,18 @@ export function renderGraph(
         .attr('rx', 18).attr('ry', 18)
         .attr('fill', border).attr('stroke', 'none');
 
-      // Area name pill — left side, vertically centered in the top stripe gap
+      // Area name pill ï¿½ left side, vertically centered in the top stripe gap
       const { lblH } = _drawAreaLabel(
         areaLayer, name, border,
         bx1 + 18,           // lblX
         by1 + 12            // lblY
       );
 
-      // Node count badge — right side, same vertical center as label
+      // Node count badge ï¿½ right side, same vertical center as label
       const badgeY = by1 + 12 + (lblH - AREA_COUNT_FONT_SIZE * 2) / 2;
       const { cw } = _drawCountBadge(
         areaLayer, positions.length, border,
-        box.x2 - 18,        // cx — will be adjusted by cw inside helper
+        box.x2 - 18,        // cx ï¿½ will be adjusted by cw inside helper
         badgeY
       );
       // Re-draw at correct x (helper returns cw so we can right-align)
@@ -331,7 +332,7 @@ export function renderGraph(
 
   // -- Step 4b: Redraw badges right-aligned (clean two-pass) ----------------
   // The helper above drew the badge at a temporary x. We redo step 4 cleanly:
-  // (Refactored below — the block above is replaced entirely by this one)
+  // (Refactored below ï¿½ the block above is replaced entirely by this one)
 
   // ... Actually let's just inline it cleanly in a single pass:
 
@@ -341,7 +342,7 @@ export function renderGraph(
   if (areaMap && Object.keys(areaMap).length > 0) {
     let ci = 0;
     Object.entries(areaMap).forEach(([areaId, areaData]) => {
-      const { name, node_ids } = areaData;
+      const { name, node_ids, aliases = [], topPad = AREA_PAD_TOP } = areaData;
       const box = areaBoxes[areaId];
       if (!box) return;
 
@@ -381,47 +382,149 @@ export function renderGraph(
         .attr('rx', 18).attr('ry', 18)
         .attr('fill', border).attr('stroke', 'none');
 
-      // -- Pre-compute both pill + badge sizes for vertical alignment --------
-      const lblH  = AREA_LABEL_FONT_SIZE * 2.2;
-      const lblW  = Math.max(name.length * (AREA_LABEL_FONT_SIZE * 0.65) + 36, 90);
-      const bdgH  = AREA_COUNT_FONT_SIZE * 2;
-      const count = positions.length;
-      const ctxt  = `${count} node${count > 1 ? 's' : ''}`;
-      const bdgW  = ctxt.length * (AREA_COUNT_FONT_SIZE * 0.65) + 20;
+      // -- Unified card: area name header + voice aliases --------------------
+      const CHAR_W    = AREA_LABEL_FONT_SIZE * 0.62;
+      const nameRowH  = Math.round(AREA_LABEL_FONT_SIZE * 2.2);
+      const penSize   = Math.round(nameRowH * 0.48);
+      const penPad    = (nameRowH - penSize) / 2;
+      const penScale  = penSize / 24;
+      const bRx       = 12;
+      const chipH     = 24;
+      const chipGapX  = 6;
+      const chipGapY  = 5;
+      const chipPadX  = 12;
+      const chipPadY  = 7;
+      const voiceHdrH = 18;
 
-      // Vertical center both elements in the AREA_PAD_TOP space above first node
-      const topGap   = AREA_PAD_TOP;               // total space above first node
-      const labelY   = by1 + (topGap - lblH) / 2;  // vertically centered
-      const lblX     = bx1 + 18;
-      const bdgX     = box.x2 - bdgW - 18;
-      const badgeY   = by1 + (topGap - bdgH) / 2;
+      // Content-fit width: enough for name row or chip row, capped at box width
+      const maxBlockW    = Math.min(bw - 28, 600);
+      const nameContentW = penPad + 4 + penSize + 8 + name.length * CHAR_W + 20;
+      const chipDefs     = aliases.map(a => ({ alias: a, cw: Math.min(a.length * 7.5 + 42, 300) }));
+      const singleRowW   = chipDefs.reduce((s, c) => s + c.cw + chipGapX, 2 * chipPadX - chipGapX);
+      const blockW       = Math.min(Math.max(nameContentW, aliases.length ? singleRowW : 0, 120), maxBlockW);
 
-      // -- Area name pill (left) ---------------------------------------------
+      // Lay out chips with wrapping
+      const chipAreaW = blockW - 2 * chipPadX;
+      const chipRows  = [[]];
+      let rowW = 0;
+      chipDefs.forEach(c => {
+        const cw = Math.min(c.cw, chipAreaW);
+        if (rowW > 0 && rowW + cw + chipGapX > chipAreaW) { chipRows.push([]); rowW = 0; }
+        chipRows[chipRows.length - 1].push({ alias: c.alias, cw });
+        rowW += cw + chipGapX;
+      });
+
+      const hasAliases = aliases.length > 0;
+      const aliasPartH = voiceHdrH + chipPadY
+        + (hasAliases ? chipRows.length * (chipH + chipGapY) - chipGapY : chipH)
+        + chipPadY;
+      const blockX = bx1 + 18;
+      const blockY = by1 + 8;
+      const blockH = nameRowH + aliasPartH;
+
+      // Drop shadow
       areaLayer.append('rect')
-        .attr('x', lblX + 3).attr('y', labelY + 3)
-        .attr('width', lblW).attr('height', lblH)
-        .attr('rx', lblH / 2).attr('ry', lblH / 2)
-        .attr('fill', 'rgba(0,0,0,0.28)');
+        .attr('x', blockX + 3).attr('y', blockY + 3)
+        .attr('width', blockW).attr('height', blockH)
+        .attr('rx', bRx).attr('ry', bRx)
+        .attr('fill', 'rgba(0,0,0,0.22)');
 
+      // Name header â€” top-rounded, flat bottom
+      const nhP = `M${blockX+bRx} ${blockY} L${blockX+blockW-bRx} ${blockY} Q${blockX+blockW} ${blockY} ${blockX+blockW} ${blockY+bRx} L${blockX+blockW} ${blockY+nameRowH} L${blockX} ${blockY+nameRowH} L${blockX} ${blockY+bRx} Q${blockX} ${blockY} ${blockX+bRx} ${blockY}Z`;
+      areaLayer.append('path').attr('d', nhP).attr('fill', border)
+        .attr('data-copy-text', name).style('cursor', 'copy');
+
+      // Alias section â€” flat top, bottom-rounded
+      const asP = `M${blockX} ${blockY+nameRowH} L${blockX+blockW} ${blockY+nameRowH} L${blockX+blockW} ${blockY+blockH-bRx} Q${blockX+blockW} ${blockY+blockH} ${blockX+blockW-bRx} ${blockY+blockH} L${blockX+bRx} ${blockY+blockH} Q${blockX} ${blockY+blockH} ${blockX} ${blockY+blockH-bRx} L${blockX} ${blockY+nameRowH}Z`;
+      areaLayer.append('path').attr('d', asP).attr('fill', 'rgba(255,255,255,0.97)');
+
+      // Outer border (full card)
       areaLayer.append('rect')
-        .attr('x', lblX).attr('y', labelY)
-        .attr('width', lblW).attr('height', lblH)
-        .attr('rx', lblH / 2).attr('ry', lblH / 2)
-        .attr('fill', border)
-        .attr('stroke', 'rgba(255,255,255,0.4)').attr('stroke-width', 1.5);
+        .attr('x', blockX).attr('y', blockY).attr('width', blockW).attr('height', blockH)
+        .attr('rx', bRx).attr('ry', bRx).attr('fill', 'none')
+        .attr('stroke', border).attr('stroke-width', 2);
 
-      areaLayer.append('text')
-        .attr('x', lblX + lblW / 2).attr('y', labelY + lblH / 2)
-        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-        .style('font-size',      `${AREA_LABEL_FONT_SIZE}px`)
-        .style('font-family',    'Segoe UI, Arial, sans-serif')
-        .style('font-weight',    'bold')
-        .style('fill',           '#ffffff')
-        .style('letter-spacing', '0.5px')
+      // Separator between name and alias section
+      areaLayer.append('line')
+        .attr('x1', blockX).attr('y1', blockY + nameRowH)
+        .attr('x2', blockX + blockW).attr('y2', blockY + nameRowH)
+        .attr('stroke', border).attr('stroke-width', 1.5).style('pointer-events', 'none');
+
+      // Pen click overlay â€” transparent rect over pen area, opens popup
+      areaLayer.append('rect')
+        .attr('x', blockX).attr('y', blockY)
+        .attr('width', penPad + 2 + penSize + penPad).attr('height', nameRowH)
+        .attr('fill', 'rgba(0,0,0,0)')
+        .attr('data-area-nav', '1').attr('data-area-id', areaId).style('cursor', 'pointer');
+
+      // Pencil icon in name header
+      areaLayer.append('g')
+        .attr('transform', `translate(${blockX+penPad+2},${blockY+penPad}) scale(${penScale})`)
         .style('pointer-events', 'none')
-        .text(name);
+        .selectAll('path')
+        .data([
+          'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7',
+          'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'
+        ])
+        .enter().append('path').attr('d', d => d).attr('fill', 'none')
+        .attr('stroke', 'rgba(255,255,255,0.9)').attr('stroke-width', 2)
+        .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
 
-      // -- Node count badge (right) ------------------------------------------
+      // Area name text
+      const iconRightX = blockX + penPad + 2 + penSize;
+      const textX      = (iconRightX + 10 + blockX + blockW) / 2;
+      areaLayer.append('text')
+        .attr('x', textX).attr('y', blockY + nameRowH / 2)
+        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+        .style('font-size', `${AREA_LABEL_FONT_SIZE}px`).style('font-family', 'Segoe UI, Arial, sans-serif')
+        .style('font-weight', 'bold').style('fill', '#ffffff')
+        .style('letter-spacing', '0.5px').style('pointer-events', 'none').text(name);
+
+      // "Area voice asst." sub-header â€” black text, always readable on white bg
+      areaLayer.append('text')
+        .attr('x', blockX + chipPadX).attr('y', blockY + nameRowH + voiceHdrH / 2 + 1)
+        .attr('dominant-baseline', 'middle')
+        .style('font-size', '9px').style('font-family', 'Segoe UI, Arial, sans-serif')
+        .style('font-weight', '700').style('letter-spacing', '0.6px')
+        .style('fill', '#111111').style('pointer-events', 'none').text('Area voice assistant');
+
+      const chipsStartY = blockY + nameRowH + voiceHdrH + chipPadY;
+
+      if (hasAliases) {
+        chipRows.forEach((row, ri) => {
+          const cy = chipsStartY + ri * (chipH + chipGapY);
+          let cx = blockX + chipPadX;
+          row.forEach(({ alias, cw }) => {
+            areaLayer.append('rect')
+              .attr('x', cx).attr('y', cy).attr('width', cw).attr('height', chipH)
+              .attr('rx', chipH / 2).attr('ry', chipH / 2)
+              .attr('fill', '#ffffff').attr('stroke', border).attr('stroke-width', 1.5)
+              .attr('data-copy-text', alias).style('cursor', 'copy');
+            areaLayer.append('text')
+              .attr('x', cx + 10).attr('y', cy + chipH / 2).attr('dominant-baseline', 'middle')
+              .style('font-size', '11px').style('font-family', 'Segoe UI, Arial, sans-serif')
+              .style('font-weight', '600').style('fill', '#333333')
+              .style('pointer-events', 'none').text('\uD83D\uDCAC\u00A0' + alias);
+            cx += cw + chipGapX;
+          });
+        });
+      } else {
+        areaLayer.append('text')
+          .attr('x', blockX + chipPadX).attr('y', chipsStartY + chipH / 2)
+          .attr('dominant-baseline', 'middle')
+          .style('font-size', '11px').style('font-family', 'Segoe UI, Arial, sans-serif')
+          .style('font-style', 'italic').style('fill', '#999999')
+          .style('pointer-events', 'none').text('None');
+      }
+
+      // -- Node count badge (right, aligned with name row) ------------------
+      const count  = positions.length;
+      const ctxt   = `${count} node${count > 1 ? 's' : ''}`;
+      const bdgH   = AREA_COUNT_FONT_SIZE * 2;
+      const bdgW   = ctxt.length * (AREA_COUNT_FONT_SIZE * 0.65) + 20;
+      const bdgX   = box.x2 - bdgW - 18;
+      const badgeY = blockY + (nameRowH - bdgH) / 2;
+
       areaLayer.append('rect')
         .attr('x', bdgX + 2).attr('y', badgeY + 2)
         .attr('width', bdgW).attr('height', bdgH)
@@ -437,12 +540,10 @@ export function renderGraph(
       areaLayer.append('text')
         .attr('x', bdgX + bdgW / 2).attr('y', badgeY + bdgH / 2)
         .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-        .style('font-size',      `${AREA_COUNT_FONT_SIZE}px`)
-        .style('font-family',    'Segoe UI, Arial, sans-serif')
-        .style('fill',           border)
-        .style('font-weight',    'bold')
-        .style('pointer-events', 'none')
-        .text(ctxt);
+        .style('font-size', `${AREA_COUNT_FONT_SIZE}px`)
+        .style('font-family', 'Segoe UI, Arial, sans-serif')
+        .style('fill', border).style('font-weight', 'bold')
+        .style('pointer-events', 'none').text(ctxt);
     });
   }
 
@@ -487,23 +588,13 @@ export function renderGraph(
       .attr('marker-end',
         meta.marker === 'url(#arrow-dashed)' ? 'url(#arrow-dashed2)' : 'url(#arrow2)');
 
-    // "wraps" label pill
+    // "wraps" indicator â€” small dot at midpoint, no overlapping pill
     if (meta.label) {
       const mp = _midpoint(points);
-      const lw = meta.label.length * 8 + 16, lh = 22;
-      edgeLayer.append('rect')
-        .attr('x', mp.x - lw / 2).attr('y', mp.y - lh / 2)
-        .attr('width', lw).attr('height', lh)
-        .attr('rx', 11).attr('ry', 11)
-        .attr('fill', '#ffffff')
-        .attr('stroke', meta.color || '#FF9800').attr('stroke-width', 2);
-      edgeLayer.append('text')
-        .attr('x', mp.x).attr('y', mp.y)
-        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-        .style('font-size', '11px').style('font-family', 'Segoe UI, Arial, sans-serif')
-        .style('font-style', 'italic').style('font-weight', 'bold')
-        .style('fill', meta.color || '#FF9800').style('pointer-events', 'none')
-        .text(meta.label);
+      edgeLayer.append('circle')
+        .attr('cx', mp.x).attr('cy', mp.y).attr('r', 5)
+        .attr('fill', meta.color || '#FF9800')
+        .attr('stroke', '#ffffff').attr('stroke-width', 2);
     }
   });
 
