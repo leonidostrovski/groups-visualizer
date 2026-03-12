@@ -2,11 +2,19 @@ import {
   get_domain_color,
   get_domain_display_name,
   get_state_badge,
-  get_entity_members
+  get_entity_members,
+  is_problem_state
 } from './ha-api.js';
 
 // Friendly toggles for empty sections
-const HIDE_EMPTY_SECTIONS = { labels: false, voice: false, aliases: false };
+const HIDE_EMPTY_SECTIONS = { labels: false, voice: false, aliases: true };
+
+function _gearIcon(size) {
+  return `<ha-icon icon="mdi:cog-outline"
+    style="display:block;margin:0 auto;width:${size}px;height:${size}px;
+           --mdc-icon-size:${size}px;pointer-events:none">
+  </ha-icon>`;
+}
 
 function _esc(s) {
   return String(s)
@@ -75,11 +83,11 @@ export function create_node_table(
   const eid  = entity.entity_id;
   const name = entity.attributes?.friendly_name || eid;
 
-  const headerColor = get_domain_color(eid);
-  const domainLabel = get_domain_display_name(eid);
-  const isWrapper   = eid in pairs;
-  const isWrappedSw = wrappedSwitchIds ? wrappedSwitchIds.has(eid) : Object.values(pairs).includes(eid);
-  const icon = isWrapper ? ' [W]' : (isWrappedSw ? ' [S]' : '');
+  const headerColor  = get_domain_color(eid);
+  const domainLabel  = get_domain_display_name(eid);
+  const badState     = is_problem_state(entity);
+  const borderColor  = badState ? '#F44336' : headerColor;
+  const icon = '';
 
   const voice_label = (show_voice_labels && entity.attributes?.voice_label) || '';
 
@@ -87,14 +95,11 @@ export function create_node_table(
   const child_groups  = all_members.filter(m => group_ids.has(m));
   const leaf_members  = all_members.filter(m => !group_ids.has(m));
 
-  const { text: stateText, bg: stateBg } = get_state_badge(eid, lookup);
+  const { text: stateText, bg: stateBg, unit: stateUnit } = get_state_badge(eid, lookup);
   const stats = `${child_groups.length} Groups / ${leaf_members.length} Entities`;
 
   // Registry lookups
   const reg_entry = (registry.entities || {})[eid] || {};
-  const area_id   = reg_entry.area_id || null;
-  const area_obj  = area_id ? (registry.areas || {})[area_id] : null;
-  const area_name = area_obj ? (area_obj.name || area_id) : null;
 
   const label_ids = Array.isArray(reg_entry.labels) ? reg_entry.labels : [];
   const aliases   = Array.isArray(reg_entry.aliases) ? reg_entry.aliases : [];
@@ -111,24 +116,46 @@ export function create_node_table(
   ).join('');
 
   const alias_rows = aliases.map(a =>
-    `<div ${_copyclick(a)} style="font-size:10px;color:#444;padding:1px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Click to copy">– ${_esc(a)}</div>`
+    `<div ${_copyclick(a)} style="font-size:10px;color:#444;padding:1px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Click to copy">ï¿½ ${_esc(a)}</div>`
   ).join('');
 
   let rows = '';
 
   // Row 1: Domain header
-  rows += `<tr><td style="background:${headerColor};color:#fff;font-size:11px;font-weight:bold;padding:5px 10px;letter-spacing:1px;border-radius:3px 3px 0 0;border-bottom:2px solid rgba(0,0,0,0.15)">${domainLabel}${icon}</td></tr>`;
+  rows += `<tr><td colspan="2" style="background:${headerColor};color:#fff;font-size:11px;font-weight:bold;padding:5px 10px;letter-spacing:1px;border-radius:3px 3px 0 0;border-bottom:2px solid rgba(0,0,0,0.15)">${domainLabel}${icon}</td></tr>`;
 
-  // Row 2: Friendly name
-  rows += `<tr><td ${_copyclick(name)} style="font-weight:bold;font-size:13px;padding:7px 10px 4px;color:#111;word-wrap:break-word;white-space:normal;line-height:1.4;border-bottom:2px solid #e0e0e0;background:#fafafa;cursor:pointer">${_esc(name)}</td></tr>`;
+  // Rows 2+3: gear cell (rowspan=2) | friendly name / entity ID
+  const nameColor = badState ? '#c62828' : '#111';
+  const eidColor  = badState ? '#c62828' : '#888';
+  rows += `<tr>
+    <td rowspan="2" data-more-info="1" data-entity-id="${eid}" title="Open settings"
+      style="cursor:pointer;vertical-align:middle;
+             padding:4px 0;background:#fafafa;
+             border-bottom:2px solid #e0e0e0;
+             display:table-cell;text-align:center">
+      ${_gearIcon(46)}
+    </td>
+    <td ${_copyclick(name)} style="font-weight:bold;font-size:13px;padding:6px 10px 3px 8px;
+      color:${nameColor};word-wrap:break-word;white-space:normal;line-height:1.4;
+      border-bottom:1px solid #ebebeb;background:#fafafa;cursor:pointer">
+      ${_esc(name)}
+    </td>
+  </tr>
+  <tr>
+    <td ${_copyclick(eid)} style="font-size:10px;color:${eidColor};padding:3px 10px 7px 8px;
+      word-break:break-all;line-height:1.3;border-bottom:2px solid #e0e0e0;
+      background:#f5f5f5;cursor:pointer;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace">
+      ${eid}
+    </td>
+  </tr>`;
 
-  // Row 3: Entity ID
-  rows += `<tr><td ${_copyclick(eid)} style="font-size:10px;color:#888;padding:3px 10px 7px;word-break:break-all;line-height:1.3;border-bottom:2px solid #e0e0e0;background:#f5f5f5;cursor:pointer;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">${eid}</td></tr>`;
-
-  // Row 4: State badge (CLICKABLE — no inline stopPropagation)
-  rows += `<tr><td style="padding:7px 10px;text-align:center;border-bottom:2px solid #e0e0e0;background:#fff">
-    <span data-state-badge="1" data-entity-id="${eid}"
-      title="Toggle"
+  // Row 4: State badge (CLICKABLE for toggleable domains only)
+  const _toggleDomains = new Set(['switch', 'light', 'fan', 'group']);
+  const _toggleTitle = _toggleDomains.has(eid.split('.')[0]) ? 'title="Toggle"' : '';
+  rows += `<tr><td colspan="2" style="padding:7px 10px;text-align:center;border-bottom:2px solid #e0e0e0;background:#fff">
+    <span data-state-badge="1" data-entity-id="${eid}" data-unit="${_esc(stateUnit)}"
+      ${_toggleTitle}
       style="display:inline-block;background:${stateBg};color:#fff;
              font-size:12px;font-weight:bold;padding:5px 28px;border-radius:4px;
              min-width:80px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.2);
@@ -138,47 +165,47 @@ export function create_node_table(
   </td></tr>`;
 
   // Row 5: Stats
-  rows += `<tr><td style="font-size:10px;color:#777;padding:4px 10px 6px;text-align:center;border-bottom:2px solid #e0e0e0;font-style:italic;background:#fafafa">${stats}</td></tr>`;
+  rows += `<tr><td colspan="2" style="font-size:10px;color:#777;padding:4px 10px 6px;text-align:center;border-bottom:2px solid #e0e0e0;font-style:italic;background:#fafafa">${stats}</td></tr>`;
 
-  // Row 6: Area
-  rows += `<tr><td ${area_name ? _copyclick(area_name) : ''} style="font-size:10px;color:#333;padding:5px 10px;border-bottom:2px solid #e0e0e0;background:#E3F2FD;${area_name ? 'cursor:pointer;' : ''}">
-    <span style="color:#111;font-weight:bold;margin-right:6px">[Area]</span>
-    ${area_name ? _esc(area_name) : _noneText}
-  </td></tr>`;
 
-  // Row 7: Labels
+  // Row 7: Labels â€” mini-card matching voice assistant style
   if (label_items.length === 0 && HIDE_EMPTY_SECTIONS.labels) {
     // hide
   } else {
-    rows += `<tr><td style="padding:5px 10px;border-bottom:2px solid #e0e0e0;background:#F3E5F5">
-      <div style="font-size:10px;color:#111;font-weight:bold;margin-bottom:3px">[Labels]</div>
-      ${chips ? `<div style="line-height:1.8">${chips}</div>` : _nonePill}
+    const _hasLabels   = label_items.length > 0;
+    const _lblHdrBg    = _hasLabels ? '#1976D2' : '#e0e0e0';
+    const _lblHdrColor = _hasLabels ? '#fff'    : '#999';
+    const _lblBorder   = _hasLabels ? '#1976D2' : '#ccc';
+    rows += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:1px solid #e8e8e8;background:#fafafa">
+      <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_lblBorder}">
+        <div style="background:${_lblHdrBg};color:${_lblHdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Group Labels</div>
+        <div style="background:#fff;padding:4px 8px">
+          ${_hasLabels ? `<div style="display:flex;flex-wrap:wrap;gap:3px;line-height:1.8">${chips}</div>` : _noneText}
+        </div>
+      </div>
     </td></tr>`;
   }
 
-  // Row 8: Voice
-  if ((!voice_label || voice_label.trim() === '') && HIDE_EMPTY_SECTIONS.voice) {
-    // hide
-  } else {
-    rows += `<tr><td ${voice_label ? _copyclick(voice_label) : ''} style="font-size:10px;color:#333;padding:5px 10px;border-bottom:2px solid #e0e0e0;background:#f9f4ff;${voice_label ? 'cursor:pointer;' : ''}">
-      <span style="color:#111;font-weight:bold;margin-right:4px">[Voice]</span>
-      ${voice_label ? _esc(voice_label) : _noneText}
-    </td></tr>`;
-  }
-
-  // Row 9: Aliases
-  if (aliases.length === 0 && HIDE_EMPTY_SECTIONS.aliases) {
-    // hide
-  } else {
-    rows += `<tr><td style="padding:5px 10px;border-bottom:2px solid #e0e0e0;background:#FFF8E1">
-      <div style="font-size:10px;color:#111;font-weight:bold;margin-bottom:3px">[Aliases]${aliases.length > 0 ? ` (${aliases.length})` : ''}</div>
-      ${alias_rows || _noneText}
-    </td></tr>`;
-  }
+  // Row 8+9: Group voice assistant â€” unified card showing entity registry aliases
+  const _hasVoice   = aliases.length > 0;
+  const _hdrBg      = _hasVoice ? '#7B1FA2' : '#e0e0e0';
+  const _hdrColor   = _hasVoice ? '#fff'    : '#999';
+  const _cardBorder = _hasVoice ? '#7B1FA2' : '#ccc';
+  rows += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
+    <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_cardBorder}">
+      <div style="background:${_hdrBg};color:${_hdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Group voice assistant</div>
+      <div style="background:#fff;padding:4px 8px">
+        ${_hasVoice
+          ? aliases.map(a => `<div ${_copyclick(a)} style="font-size:12px;color:#000;font-weight:600;cursor:pointer;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDCAC ${_esc(a)}</div>`).join('')
+          : _noneText
+        }
+      </div>
+    </div>
+  </td></tr>`;
 
   // Leaf members
   if (leaf_members.length > 0) {
-    rows += `<tr><td style="font-size:10px;color:#444;font-weight:bold;padding:5px 10px 3px;border-bottom:1px solid #e0e0e0;background:#f0f4ff">Entities (${leaf_members.length}):</td></tr>`;
+    rows += `<tr><td colspan="2" style="font-size:10px;color:#444;font-weight:bold;padding:5px 10px 3px;border-bottom:1px solid #e0e0e0;background:#f0f4ff">Entities (${leaf_members.length}):</td></tr>`;
 
     const show_n = Math.min(leaf_members.length, 10);
     for (let i = 0; i < show_n; i++) {
@@ -187,25 +214,36 @@ export function create_node_table(
       const { text: ms, bg: mb } = get_state_badge(mid, lookup);
       const rowBg = i % 2 === 0 ? '#ffffff' : '#f8f8f8';
 
-      rows += `<tr><td ${_copyclick(mid)} style="font-size:10px;padding:6px 10px;border-bottom:1px solid #e8e8e8;background:${rowBg};cursor:pointer">
-        <span data-state-badge="1" data-entity-id="${mid}"
-          title="Toggle"
-          style="float:right;background:${mb};color:#fff;font-size:9px;
-                 padding:2px 7px;border-radius:3px;margin-left:6px;
-                 white-space:nowrap;font-weight:bold;cursor:pointer;user-select:none;">
-          ${ms}
-        </span>
-        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;font-size:11px;font-weight:600">${_esc(mname)}</div>
-        <div style="margin-top:2px;color:#888;font-size:10px;line-height:1.2;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">${mid}</div>
+      const _mToggleTitle = _toggleDomains.has(mid.split('.')[0]) ? 'title="Toggle"' : '';
+      const munit     = (lookup[mid]?.attributes?.unit_of_measurement || '').trim();
+      const mrawstate = lookup[mid]?.state || '';
+      const mbadgeText = munit && !isNaN(parseFloat(mrawstate)) ? `${mrawstate} ${munit}` : ms;
+      rows += `<tr><td colspan="2" style="font-size:10px;padding:5px 10px;border-bottom:1px solid #e8e8e8;background:${rowBg}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span data-more-info="1" data-entity-id="${mid}" title="Open settings"
+            style="flex-shrink:0;cursor:pointer;line-height:0">${_gearIcon(34)}</span>
+          <div style="overflow:hidden;flex:1;min-width:0">
+            <div ${_copyclick(mname)} style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;font-size:11px;font-weight:600;cursor:pointer">${_esc(mname)}</div>
+            <div ${_copyclick(mid)} style="margin-top:1px;color:#888;font-size:10px;line-height:1.2;cursor:pointer;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace">${mid}</div>
+          </div>
+          <span data-state-badge="1" data-entity-id="${mid}" data-unit="${_esc(munit)}"
+            ${_mToggleTitle}
+            style="flex-shrink:0;background:${mb};color:#fff;font-size:9px;
+                   padding:2px 7px;border-radius:3px;
+                   white-space:nowrap;font-weight:bold;cursor:pointer;user-select:none;">
+            ${mbadgeText}
+          </span>
+        </div>
       </td></tr>`;
     }
 
     if (leaf_members.length > 10) {
-      rows += `<tr><td style="font-size:9px;color:#aaa;padding:3px 10px 5px;font-style:italic;background:#f8f8f8">+${leaf_members.length - 10} more...</td></tr>`;
+      rows += `<tr><td colspan="2" style="font-size:9px;color:#aaa;padding:3px 10px 5px;font-style:italic;background:#f8f8f8">+${leaf_members.length - 10} more...</td></tr>`;
     }
   }
 
-  return `<table style="border-collapse:collapse;width:100%;background:#fff;border-radius:4px;border:3px solid ${headerColor};box-shadow:0 3px 10px rgba(0,0,0,0.2);font-family:Segoe UI,Arial,sans-serif;table-layout:fixed;word-wrap:break-word">
+  return `<table style="border-collapse:collapse;width:100%;background:#fff;border-radius:4px;border:3px solid ${borderColor};box-shadow:0 3px 10px rgba(0,0,0,0.2);font-family:Segoe UI,Arial,sans-serif;table-layout:fixed;word-wrap:break-word">
+    <colgroup><col style="width:56px"><col></colgroup>
     ${rows}
   </table>`;
 }
