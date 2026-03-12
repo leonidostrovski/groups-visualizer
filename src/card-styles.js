@@ -10,6 +10,7 @@ export const cardStyles = css`
     font-family: Segoe UI, Arial, sans-serif;
   }
   .header-title { font-size: 16px; font-weight: bold; }
+  .header-version { font-size: 11px; font-weight: normal; opacity: 0.65; margin-left: 6px; }
   .header-subtitle { font-size: 11px; opacity: 0.75; margin-top: 2px; }
 
   .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -89,4 +90,58 @@ export const cardStyles = css`
     text-align: center; padding: 60px;
     color: var(--secondary-text-color); font-size: 16px;
   }
+
+  /* -- Area popup -------------------------------------------------------- */
+  .area-popup-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .area-popup {
+    background: #fff; border-radius: 12px;
+    min-width: 320px; max-width: 480px; width: 90%;
+    max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    font-family: Segoe UI, Arial, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  .area-popup-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #1a237e; color: #fff;
+    padding: 14px 16px; border-radius: 12px 12px 0 0;
+    font-size: 16px; font-weight: bold; flex-shrink: 0;
+  }
+  .area-popup-close {
+    background: none; border: none; color: #fff;
+    font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .area-popup-close:hover { opacity: 0.75; }
+  .area-popup-section {
+    padding: 10px 16px; border-bottom: 1px solid #eee;
+  }
+  .area-popup-label {
+    font-size: 10px; font-weight: bold; color: #777;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;
+  }
+  .area-popup-alias { font-size: 12px; color: #444; padding: 2px 0; }
+  .area-popup-entity {
+    display: flex; flex-direction: column;
+    padding: 5px 0; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+  .area-popup-entity:hover { background: #f5f5f5; margin: 0 -16px; padding: 5px 16px; }
+  .area-popup-entity:last-child { border-bottom: none; }
+  .area-popup-entity-name { font-size: 12px; color: #222; font-weight: 500; }
+  .area-popup-eid { font-size: 10px; color: #999; font-family: monospace; margin-top: 1px; }
+  .area-popup-none { font-size: 12px; color: #aaa; }
+  .area-popup-footer {
+    padding: 12px 16px; text-align: right; flex-shrink: 0;
+  }
+  .area-popup-btn {
+    background: #1a237e; color: #fff;
+    border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 13px;
+    cursor: pointer; font-weight: 600;
+  }
+  .area-popup-btn:hover { background: #283593; }
 `;
