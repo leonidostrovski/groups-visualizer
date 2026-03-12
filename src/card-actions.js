@@ -11,10 +11,14 @@ export function refreshStates(shadowRoot, hass) {
     const entity = hass.states[eid];
     if (!entity) return;
 
-    const state = (entity.state || 'unknown').toLowerCase();
-    const text = state === 'on' ? 'ON'
+    const rawState = entity.state || 'unknown';
+    const state    = rawState.toLowerCase();
+    const unit     = (el.getAttribute('data-unit') || '').trim();
+    const isNum    = unit && !isNaN(parseFloat(rawState));
+    const text = state === 'on'  ? 'ON'
       : state === 'off' ? 'OFF'
-      : state.substring(0, 8).toUpperCase();
+      : isNum           ? `${rawState} ${unit}`
+      : rawState.substring(0, 8).toUpperCase();
     const bg = state === 'on' ? '#4CAF50'
       : state === 'off' ? '#9E9E9E'
       : '#2196F3';
