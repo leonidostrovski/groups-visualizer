@@ -1,96 +1,50 @@
-# AI-Generated Project Notice
-This project was created entirely with the assistance of AI tools.
+# Groups Visualizer 
+http://github.com/leonidostrovski/groups-visualizer
 
----
-
-## Author & AI Transparency
-
-This project was initiated and maintained by:
-
-Email: leonidostrovski@gmail.com
-Country: Israel
-
-All source code, architecture, optimization, and documentation were generated with the assistance of AI tools.
-Human work was applied for integration, testing, debugging, and verification.
-
----
-
-# Groups Visualizer
 A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
-[![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)
+
+[![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
+
+Groups Visualizer is a Home Assistant Lovelace card that turns your groups hierarchy into a clear, interactive graph — giving you a complete picture of your smart home hierarchy.
+
+- See all groups, subgroups, lights, switches, fans and sensors in one visual map
+- Nodes automatically organized by Home Assistant Area — each area shown as a distinct visual block
+- Area voice assistant names displayed directly on the area block — know exactly what to say to control each room
+- Group voice assistant names shown on every group node — voice aliases always visible
+- Click to toggle entities, click to copy entity IDs, voice names, and aliases
+- Don't guess how your groups connect — see the full picture
+
+---
 
 ## Screenshots
 
 ![Example](screenshots/example.png)
 
-`groups-visualizer` is an interactive Lovelace custom card that displays Home Assistant groups, switches, lights, fans, sensors, and hierarchical relationships as clean area-aware graph diagrams.
-
-The card automatically reads:
-- Entity relationships
-- Areas and their voice aliases
-- Entity registry (labels, aliases)
-- Label registry
-- Voice assistant names
-
-and converts them into a zoomable, multi-layer DAG graph.
-
----
-
-## What's New in v1.1.0
-
-### Area Voice Assistant Block
-Each area box now shows a dedicated **Area voice assistant** card — a unified block with a colored header and the area's voice aliases as clickable chips. Clicking any alias copies it to clipboard.
-
-### Group Labels Card
-Each group node now has a **Group Labels** mini-card with a colored header (blue when labels are assigned, gray when none). Labels are shown as colored chips inside the white content section.
-
-### Group Voice Assistant Card
-Each group node now has a **Group voice assistant** mini-card showing the entity's registry aliases (the real voice assistant names). The header is colored purple when aliases exist, gray when none. Voice names are larger and bold for readability, and each is clickable to copy.
-
-### Improved Edge Visualization
-The dashed orange "wraps" edge label pill (which previously overlapped node cards) has been replaced with a small dot at the midpoint — keeping the spatial relationship clear without obscuring content.
-
-### Sensor Units in State Badges
-Numeric sensor values now display their unit of measurement (e.g. `6.04 A`, `21.5 °C`) directly in the state badge and in entity rows inside node cards.
-
-### Copy-on-Click for Area Elements
-- Click the area name header → copies the area name
-- Click a voice alias chip → copies the alias
-- Pen icon → opens the area edit popup (pen icon only, not the whole header)
-
-### UI Cleanup
-- Removed `[W]` / `[S]` wrapper/switch indicators from node headers
-- Consistent section styling across Labels and Voice cards
-- Cleaner section headers (no more `[BRACKETS]` debug-style labels)
-
 ---
 
 ## Installation
 
-### HACS Installation (Recommended)
+### HACS (Recommended)
 
-1. Open Home Assistant.
-2. Go to: **HACS > Frontend > Custom Repositories**.
-3. Add this repository as a **Custom Repository** with category: "Lovelace".
-4. Install **Groups Visualizer** from HACS.
-5. Restart Home Assistant if required.
+1. In Home Assistant, open **HACS**
+2. Search for **Groups Visualizer** and install it
 
 ---
 
 ### Adding the Card to the Dashboard
 
-1. Go to: **Settings > Dashboards**.
-2. Select the dashboard where the card should appear.
-3. Click the three-dots menu (top right) > **Edit Dashboard**.
-4. Click **+ Add View**.
-5. In "View Type", select: **Panel (single card)**.
-6. Name the view, for example: `Groups Visualizer`.
-7. Save the view.
+1. Go to **Settings → Dashboards**
+2. Select the dashboard where the card should appear
+3. Click the three-dots menu (top right) → **Edit Dashboard**
+4. Click **+ Add View**
+5. In "View Type", select **Panel (single card)**
+6. Name the view, for example: `Groups Visualizer`
+7. Save the view
 
-Add the card:
+Add the card to the new view:
 
-1. Click **Add Card**.
-2. Choose **Manual**.
+1. Click **Add Card**
+2. Select **Manual**
 3. Paste:
 
 ```yaml
@@ -98,30 +52,43 @@ type: custom:groups-visualizer
 show_domains: {}
 show_voice_labels: true
 ```
+<details>
+<summary>Troubleshooting: card not loading?</summary>
+  
+Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear
+
+Check that the resource was registered automatically:
+**Settings → Dashboards → (three dots) → Resources**
+
+You should see an entry like:
+```
+/hacsfiles/groups-visualizer/groups-visualizer.js?hacstag=...
+```
+
+If it's missing, try reinstalling via HACS or adding it manually.
+</details>
 
 ---
 
-## Manual Installation (Alternative)
+### Manual Installation (Alternative)
 
-1. Download the latest release from GitHub.
-2. Copy `dist/groups-visualizer.js` into:
-
-```
-/config/www/community/groups-visualizer/
-```
-
-3. Add this resource in Home Assistant:
-   **Settings > Dashboards > (three dots) > Resources > Add Resource**
-
-Resource URL:
+1. Download the latest release from GitHub
+2. Copy `groups-visualizer.js` into:
 
 ```
-/local/community/groups-visualizer/groups-visualizer.js
+/config/www/groups-visualizer/
 ```
 
-Type must be: **JavaScript Module**
+3. Add a resource in Home Assistant:
+   **Settings → Dashboards → (three dots) → Resources → Add Resource**
 
-4. Add the card manually to any dashboard:
+   Resource URL:
+   ```
+   /local/groups-visualizer/groups-visualizer.js
+   ```
+   Type: **JavaScript Module**
+
+4. Add the card to any dashboard:
 
 ```yaml
 type: custom:groups-visualizer
@@ -169,28 +136,15 @@ show_voice_labels: true
 
 ---
 
-## Project File Structure
+## Author & AI Transparency
 
-```
-groups-visualizer/
-├── dist/
-│   └── groups-visualizer.js
-├── src/
-│   ├── index.js              # Main Lovelace card (UI, tabs, rebuild)
-│   ├── card-styles.js        # All card styles
-│   ├── card-data.js          # Loads states, registries, builds tab structure
-│   ├── card-actions.js       # Rendering and state refresh
-│   ├── ha-api.js             # Entity utilities and helpers
-│   ├── ha-node-table.js      # Node HTML generator
-│   ├── graph-layout.js       # Dagre layout generator
-│   ├── graph-render.js       # SVG rendering engine
-│   ├── graph-measure.js      # DOM height measurement engine
-│   └── constants.js          # Shared constants
-├── hacs.json
-├── LICENSE
-├── package.json
-└── README.md
-```
+This project was initiated and maintained by:
+
+Email: leonidostrovski@gmail.com
+Country: Israel
+
+All source code, architecture, optimization, and documentation were generated with the assistance of AI tools.
+Human work was applied for integration, testing, debugging, and verification.
 
 ---
 
@@ -200,7 +154,3 @@ This project is licensed under the MIT License.
 See the included `LICENSE` file for full details.
 
 ---
-
-# Final AI-Generated Notice
-
-This project — including code, structure, and documentation — was generated with the assistance of AI tools.
