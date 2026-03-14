@@ -17,9 +17,7 @@ Groups Visualizer is a Home Assistant Lovelace card that turns your groups hiera
 ---
 
 ## Screenshots
-
-![Example](screenshots/example.png)
-
+![Demo](screenshots/groups-visualizer-demo.gif)
 ---
 
 ## Installation
