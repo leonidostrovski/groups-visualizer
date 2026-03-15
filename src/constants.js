@@ -1,4 +1,4 @@
-export const CARD_VERSION = "1.1.0";
+export const CARD_VERSION = "1.1.2";
 
 export const NODE_WIDTH            = 380;
 export const DAGRE_HEIGHT_ESTIMATE = 300;
