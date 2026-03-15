@@ -18,11 +18,10 @@ Human work was applied for integration, testing, debugging, and verification.
 # Groups Visualizer
 A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 [![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
-![Version](https://img.shields.io/badge/version-1.1.2-blue)
 
-## Screenshots
+## Demo
 
-![Example](screenshots/example.png)
+![Demo](screenshots/groups-visualizer-demo.gif)
 
 `groups-visualizer` is an interactive Lovelace custom card that displays Home Assistant groups, switches, lights, fans, sensors, wrappers, and hierarchical relationships as clean area-aware graph diagrams.
 
