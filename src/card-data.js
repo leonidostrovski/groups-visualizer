@@ -51,9 +51,24 @@ export async function fetchAllData(hass) {
 
   // entity_registry/list omits the `aliases` field in some HA versions.
   // Fetch full entries for group entities (small set) to get their aliases.
-  const group_eids = entity_list
-    .filter(e => e.platform === 'group' || e.entity_id?.startsWith('group.'))
+  // Also include wrapper light entities (light.X paired with switch.X that has members)
+  // because their platform may not be 'group' yet they appear as nodes with voice aliases.
+  const _state_lookup_pre = {};
+  all_states.forEach(e => { _state_lookup_pre[e.entity_id] = e; });
+  const _wrapper_light_eids = all_states
+    .filter(e => {
+      if (!e.entity_id.startsWith('light.')) return false;
+      const sw = _state_lookup_pre[e.entity_id.replace('light.', 'switch.')];
+      if (!sw) return false;
+      const members = sw.attributes?.entity_id ?? sw.attributes?.lights;
+      return Array.isArray(members) && members.length > 0;
+    })
     .map(e => e.entity_id);
+
+  const group_eids = [...new Set([
+    ...entity_list.filter(e => e.platform === 'group' || e.entity_id?.startsWith('group.')).map(e => e.entity_id),
+    ..._wrapper_light_eids,
+  ])];
 
   const alias_entries = await Promise.all(
     group_eids.map(eid =>
@@ -84,7 +99,19 @@ export async function fetchAllData(hass) {
   const labels = {};
   label_list.forEach(l => { if (l.label_id) labels[l.label_id] = l; });
 
-  const registry = { entities, areas, labels };
+  // Fetch voice assistant exposure data (Alexa, Google, HA conversation, etc.)
+  // Response: { entity_id: { 'cloud.alexa': { should_expose: bool }, ... } }
+  let expose = {};
+  try {
+    const _expose_raw = await hass.callWS({ type: 'homeassistant/expose_entity/list' });
+    if (_expose_raw && typeof _expose_raw === 'object' && !Array.isArray(_expose_raw)) {
+      expose = _expose_raw.exposed_entities ?? _expose_raw;
+    }
+  } catch (e) {
+    console.warn('[groups-visualizer] expose_entity/list failed:', e);
+  }
+
+  const registry = { entities, areas, labels, expose };
 
   // Update member cache with any member lists visible in current states,
   // then inject cached lists back into entities whose attributes are missing.
