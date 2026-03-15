@@ -103,6 +103,7 @@ export function create_node_table(
 
   const label_ids = Array.isArray(reg_entry.labels) ? reg_entry.labels : [];
   const aliases   = Array.isArray(reg_entry.aliases) ? reg_entry.aliases : [];
+  const hidden_by = reg_entry.hidden_by || null;
 
   const label_items = label_ids.map(lid => {
     const l = (registry.labels || {})[lid];
@@ -115,14 +116,16 @@ export function create_node_table(
     `<span style="display:inline-block;background:${l.color};color:#111;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;margin:2px 4px 2px 0;box-shadow:0 1px 2px rgba(0,0,0,0.18);white-space:nowrap;border:1.5px solid rgba(0,0,0,0.35);">${_esc(l.name)}</span>`
   ).join('');
 
-  const alias_rows = aliases.map(a =>
-    `<div ${_copyclick(a)} style="font-size:10px;color:#444;padding:1px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Click to copy">� ${_esc(a)}</div>`
-  ).join('');
-
   let rows = '';
 
-  // Row 1: Domain header
-  rows += `<tr><td colspan="2" style="background:${headerColor};color:#fff;font-size:11px;font-weight:bold;padding:5px 10px;letter-spacing:1px;border-radius:3px 3px 0 0;border-bottom:2px solid rgba(0,0,0,0.15)">${domainLabel}${icon}</td></tr>`;
+  // Hidden badge — inline after domain label in header row
+  const _hiddenTooltip = 'Hidden entities will not be included in auto-populated dashboards or when their area, device or label is referenced. Their history is still tracked and you can still interact with them with actions.';
+  const hiddenBadge = hidden_by
+    ? ` <span title="${_esc(_hiddenTooltip)}" style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,0,0,0.30);color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;letter-spacing:0.3px;vertical-align:middle;border:1.5px solid rgba(0,0,0,0.18);cursor:help"><ha-icon icon="mdi:eye-off" style="--mdc-icon-size:13px;width:13px;height:13px;display:block"></ha-icon>Hidden</span>`
+    : '';
+
+  // Row 1: Domain header with optional hidden badge
+  rows += `<tr><td colspan="2" style="background:${headerColor};color:#fff;font-size:11px;font-weight:bold;padding:5px 10px;letter-spacing:1px;border-radius:3px 3px 0 0;border-bottom:2px solid rgba(0,0,0,0.15)">${domainLabel}${icon}${hiddenBadge}</td></tr>`;
 
   // Rows 2+3: gear cell (rowspan=2) | friendly name / entity ID
   const nameColor = badState ? '#c62828' : '#111';
@@ -167,8 +170,7 @@ export function create_node_table(
   // Row 5: Stats
   rows += `<tr><td colspan="2" style="font-size:10px;color:#777;padding:4px 10px 6px;text-align:center;border-bottom:2px solid #e0e0e0;font-style:italic;background:#fafafa">${stats}</td></tr>`;
 
-
-  // Row 7: Labels — mini-card matching voice assistant style
+  // Row 6: Labels — mini-card
   if (label_items.length === 0 && HIDE_EMPTY_SECTIONS.labels) {
     // hide
   } else {
@@ -186,8 +188,12 @@ export function create_node_table(
     </td></tr>`;
   }
 
-  // Row 8+9: Group voice assistant — unified card showing entity registry aliases
-  const _hasVoice   = aliases.length > 0;
+  // Row 7: Group voice assistant — entity registry aliases, merging paired switch aliases
+  const _paired_switch_eid = pairs[eid];
+  const _paired_reg = _paired_switch_eid ? ((registry.entities || {})[_paired_switch_eid] || {}) : {};
+  const _paired_aliases = Array.isArray(_paired_reg.aliases) ? _paired_reg.aliases : [];
+  const _all_aliases = [...new Set([...aliases, ..._paired_aliases])];
+  const _hasVoice   = _all_aliases.length > 0;
   const _hdrBg      = _hasVoice ? '#7B1FA2' : '#e0e0e0';
   const _hdrColor   = _hasVoice ? '#fff'    : '#999';
   const _cardBorder = _hasVoice ? '#7B1FA2' : '#ccc';
@@ -196,9 +202,41 @@ export function create_node_table(
       <div style="background:${_hdrBg};color:${_hdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Group voice assistant</div>
       <div style="background:#fff;padding:4px 8px">
         ${_hasVoice
-          ? aliases.map(a => `<div ${_copyclick(a)} style="font-size:12px;color:#000;font-weight:600;cursor:pointer;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDCAC ${_esc(a)}</div>`).join('')
+          ? _all_aliases.map(a => `<div ${_copyclick(a)} style="font-size:12px;color:#000;font-weight:600;cursor:pointer;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDCAC ${_esc(a)}</div>`).join('')
           : _noneText
         }
+      </div>
+    </div>
+  </td></tr>`;
+
+  // Row 8: Voice exposure — Alexa / Google / HA conversation
+  const _ASSISTANT_META = {
+    'cloud.alexa':            { label: 'Alexa',    icon: 'mdi:microphone'      },
+    'cloud.google_assistant': { label: 'Google',   icon: 'mdi:google-assistant' },
+    'conversation':           { label: 'HA Voice', icon: 'mdi:home-assistant'   },
+  };
+  const _expose_self   = (registry.expose || {})[eid] || {};
+  const _expose_paired = _paired_switch_eid ? ((registry.expose || {})[_paired_switch_eid] || {}) : {};
+  const _expose_merged = { ..._expose_paired, ..._expose_self };
+  const _expose_keys   = Object.keys(_expose_merged);
+  const _hasExpose     = _expose_keys.length > 0;
+  const _expHdrBg      = _hasExpose ? '#00695C' : '#e0e0e0';
+  const _expHdrColor   = _hasExpose ? '#fff'     : '#999';
+  const _expBorder     = _hasExpose ? '#00695C'  : '#ccc';
+  const _expChips = _expose_keys.map(key => {
+    const meta    = _ASSISTANT_META[key] || { label: key, icon: 'mdi:microphone' };
+    const exposed = _expose_merged[key]?.should_expose;
+    const opacity = exposed === false ? '0.45' : '1';
+    return `<div style="display:inline-flex;align-items:center;gap:4px;background:#00695C;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;margin:2px 3px 2px 0;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.18);opacity:${opacity}">
+      <ha-icon icon="${meta.icon}" style="--mdc-icon-size:13px;width:13px;height:13px;display:block"></ha-icon>
+      ${meta.label}
+    </div>`;
+  }).join('');
+  rows += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
+    <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_expBorder}">
+      <div style="background:${_expHdrBg};color:${_expHdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Voice exposure</div>
+      <div style="background:#fff;padding:4px 8px">
+        ${_hasExpose ? `<div style="display:flex;flex-wrap:wrap">${_expChips}</div>` : _noneText}
       </div>
     </div>
   </td></tr>`;
