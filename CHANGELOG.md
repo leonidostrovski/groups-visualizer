@@ -5,6 +5,15 @@ This project follows semantic versioning: MAJOR.MINOR.PATCH
 
 ---
 
+## [1.1.3] - 2026-03-22
+
+### Added
+- **Used in Automations section** — each group node now shows which automations reference the group entity. Entries are deduplicated (same automation shown once with a ×N count badge if the group appears multiple times). Section badges indicate where the group is used: `trigger`, `condition`, and/or `action`.
+- **Open automation editor in new tab** — a pencil icon on each automation entry opens the HA automation editor in a new browser tab.
+- **Voice exposure warning** — when a group has voice aliases configured but is not exposed to any voice assistant, a yellow warning banner is shown: *"Voice aliases defined but not exposed to any assistant"*.
+
+---
+
 ## [1.1.2] - 2026-03-15
 
 ### Added
