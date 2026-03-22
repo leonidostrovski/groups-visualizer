@@ -109,22 +109,24 @@ show_voice_labels: true
 - **Area voice assistant block** — voice aliases shown as chips inside each area box
 - Automatic node height measurement
 - Dagre compound hierarchical layout
-  
-## Node cards
 
-Each node in the graph is rendered as a compact “card” that surfaces the most important information about a single Home Assistant entity at a glance.
+## Node Cards
 
-A node card typically includes:
+Each node in the graph is rendered as a compact card that surfaces the most important information about a single group entity at a glance.
 
-- **Header row** – Friendly name and domain badge (e.g. light, switch, sensor), with a subtle background color per domain.
-- **Entity ID** – The full `entity_id` shown under the title to make copy‑paste into YAML easy.
-- **State row** – Current state (e.g. `on` / `off` / numeric value) with color highlighting so you can visually scan which entities are active.
-- **Area row** – The assigned Area name, displayed with a dedicated style and 📍 icon when available, or an explicit “No area” indicator when missing.
-- **Voice assistant aliases** – Up to a few aliases used by voice assistants, shown with a 🎤 icon; additional aliases are collapsed behind a `+N more` indicator.
-- **Labels / tags** – Home Assistant labels for the entity, rendered as small 🏷️ pills to help you spot groups of related entities.
-- **Statistics row** – Per‑node stats such as number of direct children, total descendants, and depth inside the tree, which helps identify oversized or deeply nested groups.
+A node card includes the following rows, top to bottom:
 
-All metadata (area, labels, voice aliases) is read from Home Assistant’s registries at render time, so changes in Settings are reflected automatically without rebuilding the graph. When a field is not set for a given entity, the row stays visible with a neutral “none” state instead of disappearing, which makes it easy to see what is missing from your configuration.
+- **Domain header** — color-coded by domain (LIGHT, SWITCH, GROUP, FAN, SENSOR…). Shows a `Hidden` badge when the entity is hidden in the HA registry.
+- **Gear icon + name / entity ID** — gear icon opens the entity settings dialog. Friendly name and `entity_id` are both clickable to copy.
+- **State badge** — current state (`on` / `off` / sensor value with unit). Clickable to toggle for lights, switches, fans and groups.
+- **Group stats** — number of child groups and direct member entities (e.g. `2 Groups / 5 Entities`).
+- **Group Labels** — colored chips for each HA label assigned to the entity. Shows `None` when no labels are set.
+- **Group voice assistant** — voice aliases from the entity registry (click any alias to copy). For light/switch wrapper pairs, aliases from the paired switch are merged in automatically. Shows `None` when no aliases are configured.
+- **Voice exposure** — shows which voice assistants the entity is exposed to (Alexa, Google, HA Voice), each as a colored chip. Non-exposed assistants appear at reduced opacity. If voice aliases are defined but the entity is not exposed to any assistant, a warning banner is shown.
+- **Used in Automations** — lists every automation that references this group, deduplicated by automation. Each entry shows the automation name (click to copy), section badges (`trigger` / `condition` / `action`) indicating where the group is used, and a ×N count badge if the group appears more than once in the same automation. The pencil icon opens the automation editor in a new browser tab.
+- **Member entities** — up to 10 direct member entities, each showing name, entity ID, and state badge. Displays `+N more` when there are more than 10 members.
+
+All data is read from Home Assistant's registries at render time, so changes in Settings are reflected after a Rebuild without reloading the page.
 
 ### Live Interaction
 - Toggle entities directly from the graph (lights, switches, fans, groups)
