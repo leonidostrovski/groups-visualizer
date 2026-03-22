@@ -232,11 +232,71 @@ export function create_node_table(
       ${meta.label}
     </div>`;
   }).join('');
+
+  // Voice exposure warning: aliases defined but not exposed to any assistant
+  const _voiceWarning = (_hasVoice && !_hasExpose)
+    ? `<div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding:5px 8px;background:#FFF8E1;border:1.5px solid #FFB300;border-radius:6px">
+        <ha-icon icon="mdi:alert" style="--mdc-icon-size:15px;width:15px;height:15px;display:block;flex-shrink:0;color:#F57F17"></ha-icon>
+        <span style="font-size:11px;font-weight:700;color:#B71C1C;line-height:1.3">Voice aliases defined but not exposed to any assistant</span>
+       </div>`
+    : '';
+
   rows += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
     <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_expBorder}">
       <div style="background:${_expHdrBg};color:${_expHdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Voice exposure</div>
       <div style="background:#fff;padding:4px 8px">
         ${_hasExpose ? `<div style="display:flex;flex-wrap:wrap">${_expChips}</div>` : _noneText}
+        ${_voiceWarning}
+      </div>
+    </div>
+  </td></tr>`;
+
+  // Row 9: Used in Automations
+  const _autList    = (registry.automations || {})[eid] || [];
+  const _autColor   = _autList.length > 0 ? '#E65100' : '#ccc';
+  const _autBg      = _autList.length > 0 ? '#E65100' : '#e0e0e0';
+  const _autFg      = _autList.length > 0 ? '#fff'    : '#999';
+  const _secColors  = { trigger: '#E65100', condition: '#6A1B9A', action: '#1565C0' };
+
+  const _autItems = _autList.slice(0, 8).map((_au) => {
+    const _aName  = _esc(_au.name || _au.id);
+    const _aRaw   = String(_au.name || _au.id || '')
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const _aId    = (_au.id || '').replace(/'/g, '');
+    const _cnt    = _au.count || 1;
+    const _secs   = Array.isArray(_au.sections) ? _au.sections : [];
+
+    const _secBadges = _secs.map(_s => {
+      const _sc = _secColors[_s] || '#555';
+      return `<span style="display:inline-block;background:${_sc};color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:3px;letter-spacing:0.3px">${_s}</span>`;
+    }).join('');
+
+    const _cntBadge = _cnt > 1
+      ? `<span style="display:inline-block;background:#f5f5f5;color:#888;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;border:1px solid #ddd;margin-left:2px">×${_cnt}</span>`
+      : '';
+
+    const _navClick = _aId
+      ? `onclick="window.open('/config/automation/edit/${_aId}','_blank');event.stopPropagation();" title="Open automation editor in new tab"`
+      : '';
+
+    const _copyAuto = `onclick="(function(t){var _l=function(x){try{var a=document.createElement('textarea');a.value=x;a.style.cssText='position:fixed;top:-999px;opacity:0';document.body.appendChild(a);a.focus();a.select();document.execCommand('copy');document.body.removeChild(a);}catch(e){}};if(navigator.clipboard){navigator.clipboard.writeText(t).catch(function(){_l(t);});}else{_l(t);}var p=t.length>45?t.substring(0,45)+'...':t;var d=document.createElement('div');d.innerText='Copied: '+p;d.style.cssText='position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 24px;border-radius:24px;font-size:13px;z-index:999999;pointer-events:none;opacity:1;transition:opacity 0.4s ease';document.body.appendChild(d);setTimeout(function(){d.style.opacity='0';},1200);setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},1650);})('${_aRaw}');event.stopPropagation();" title="Click to copy name"`;
+
+    return `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid #f0f0f0">`
+      + (_aId ? `<span ${_navClick} style="flex-shrink:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:0;width:24px;height:24px;border-radius:8px;background:linear-gradient(145deg,#6A1B9A,#AB47BC);box-shadow:0 2px 6px rgba(106,27,154,0.45)"><ha-icon icon="mdi:pencil-outline" style="--mdc-icon-size:14px;width:14px;height:14px;display:flex;color:#fff"></ha-icon></span>` : '')
+      + `<div style="flex:1;min-width:0">`
+      + `  <div ${_copyAuto} style="font-size:11px;color:#333;font-weight:600;line-height:1.4;cursor:pointer;word-break:break-word">${_aName}</div>`
+      + (_secs.length || _cnt > 1 ? `<div style="margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:2px">${_secBadges}${_cntBadge}</div>` : '')
+      + `</div>`
+      + `</div>`;
+  }).join('');
+
+  rows += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
+    <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_autColor}">
+      <div style="background:${_autBg};color:${_autFg};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Used in Automations (${_autList.length})</div>
+      <div style="background:#fff;padding:4px 8px">
+        ${_autList.length > 0
+          ? _autItems + (_autList.length > 8 ? `<div style="font-size:9px;color:#aaa;font-style:italic;padding-top:2px">+${_autList.length - 8} more...</div>` : '')
+          : _noneText}
       </div>
     </div>
   </td></tr>`;

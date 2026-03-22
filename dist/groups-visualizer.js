@@ -902,7 +902,57 @@ async function qc(e) {
   } catch (b) {
     console.warn("[groups-visualizer] expose_entity/list failed:", b);
   }
-  const p = { entities: a, areas: c, labels: h, expose: d }, v = kg();
+  const p = { entities: a, areas: c, labels: h, expose: d };
+  let _autoMap = {};
+  function _processAutoConfigs(_autoList) {
+    if (!Array.isArray(_autoList)) return;
+    function _walkSec(obj, sec, _aId, _aName) {
+      const _stk = [obj];
+      while (_stk.length) {
+        const _cur = _stk.pop();
+        if (!_cur || typeof _cur !== "object") continue;
+        if (Array.isArray(_cur)) { _cur.forEach((_x) => _stk.push(_x)); continue; }
+        for (const [_k, _v2] of Object.entries(_cur)) {
+          if (_k === "entity_id") {
+            const _eids = Array.isArray(_v2) ? _v2 : (typeof _v2 === "string" ? [_v2] : []);
+            _eids.forEach((_eid) => {
+              if (typeof _eid !== "string" || !_eid.includes(".") || /^[0-9a-f]{32}$/i.test(_eid)) return;
+              if (!_autoMap[_eid]) _autoMap[_eid] = [];
+              const _ex = _autoMap[_eid].find((_e3) => _e3.id === _aId);
+              if (_ex) { _ex.count++; if (!_ex.sections.includes(sec)) _ex.sections.push(sec); }
+              else { _autoMap[_eid].push({ id: _aId, name: _aName, count: 1, sections: [sec] }); }
+            });
+          } else if (_v2 && typeof _v2 === "object") { _stk.push(_v2); }
+        }
+      }
+    }
+    _autoList.forEach((_au) => {
+      if (!_au) return;
+      const _aName = _au.alias || _au.id || "";
+      const _aId   = _au.id || "";
+      _walkSec(_au.trigger    || _au.triggers    || [], "trigger",   _aId, _aName);
+      _walkSec(_au.condition  || _au.conditions  || [], "condition", _aId, _aName);
+      _walkSec(_au.action     || _au.actions     || [], "action",    _aId, _aName);
+    });
+  }
+  try {
+    let _autoList = [];
+    try {
+      const _wsRes = await e.callWS({ type: "config/automation/list" });
+      if (Array.isArray(_wsRes)) _autoList = _wsRes;
+      else if (_wsRes && typeof _wsRes === "object") { const _arr = Object.values(_wsRes).find((v2) => Array.isArray(v2)); if (_arr) _autoList = _arr; }
+    } catch (_wsErr) { console.warn("[groups-visualizer] config/automation/list WS failed:", _wsErr?.message || _wsErr); }
+    if (_autoList.length === 0) {
+      const _autoEntries = r.filter((_re) => _re.entity_id && _re.entity_id.startsWith("automation.") && _re.unique_id);
+      console.log("[groups-visualizer] fetching", _autoEntries.length, "automation configs via REST");
+      const _configs = await Promise.all(_autoEntries.map((_re) => e.callApi("GET", "config/automation/config/" + _re.unique_id).catch(() => null)));
+      _autoList = _configs.filter(Boolean);
+    }
+    console.log("[groups-visualizer] automation configs loaded:", _autoList.length);
+    _processAutoConfigs(_autoList);
+  } catch (_e2) { console.warn("[groups-visualizer] automation fetch failed:", _e2); }
+  p.automations = _autoMap;
+  const v = kg();
   t.forEach((b) => {
     var T, k, M;
     const q = ((T = b.attributes) == null ? void 0 : T.entity_id) ?? ((k = b.attributes) == null ? void 0 : k.lights);
@@ -8103,7 +8153,7 @@ var fq = "0.8.5", lq = {
   },
   version: fq
 };
-const Qp = /* @__PURE__ */ v0(lq), ev = "1.1.2", Cu = 380, Fr = 32, ng = 80, ig = 26, $t = 28, ht = 24, hq = { labels: !1 };
+const Qp = /* @__PURE__ */ v0(lq), ev = "1.1.2-dev20260321-13r", Cu = 380, Fr = 32, ng = 80, ig = 26, $t = 28, ht = 24, hq = { labels: !1 };
 function tv(e) {
   return `<ha-icon icon="mdi:cog-outline"
     style="display:block;margin:0 auto;width:${e}px;height:${e}px;
@@ -8227,14 +8277,49 @@ function dq(e, t, r, n, i = !0, a = {}, s = null) {
       ${Z.label}
     </div>`;
   }).join("");
-  if (x += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
+  x += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
     <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${et}">
       <div style="background:${de};color:${Te};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Voice exposure</div>
       <div style="background:#fff;padding:4px 8px">
-        ${ee ? `<div style="display:flex;flex-wrap:wrap">${U}</div>` : du}
+        ${ee ? `<div style="display:flex;flex-wrap:wrap">${U}</div>` : du}${G && !ee ? `<div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding:5px 8px;background:#FFF8E1;border:1.5px solid #FFB300;border-radius:6px"><ha-icon icon="mdi:alert" style="--mdc-icon-size:15px;width:15px;height:15px;display:block;flex-shrink:0;color:#F57F17"></ha-icon><span style="font-size:11px;font-weight:700;color:#B71C1C;line-height:1.3">Voice aliases defined but not exposed to any assistant</span></div>` : ""}
       </div>
     </div>
-  </td></tr>`, _.length > 0) {
+  </td></tr>`;
+  const _autList = (a.automations || {})[o] || [];
+  const _autColor = _autList.length > 0 ? "#E65100" : "#ccc";
+  const _autBg = _autList.length > 0 ? "#E65100" : "#e0e0e0";
+  const _autFg = _autList.length > 0 ? "#fff" : "#999";
+  const _autItems = _autList.slice(0, 8).map((_a2) => {
+  const _aName   = ot(_a2.name || _a2.id);
+  const _aRaw    = (_a2.name || _a2.id || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const _aId     = (_a2.id || "").replace(/'/g, "");
+  const _cnt     = _a2.count || 1;
+  const _secs    = Array.isArray(_a2.sections) ? _a2.sections : [];
+  const _secColors = { trigger: "#E65100", condition: "#6A1B9A", action: "#1565C0" };
+  const _secBadges = _secs.map((_s) => {
+    const _sc = _secColors[_s] || "#555";
+    return '<span style="display:inline-block;background:' + _sc + ';color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:3px;letter-spacing:0.3px">' + _s + '</span>';
+  }).join("");
+  const _cntBadge = _cnt > 1 ? '<span style="display:inline-block;background:#f5f5f5;color:#888;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;border:1px solid #ddd;margin-left:2px">×' + _cnt + '</span>' : '';
+  const _navClick = _aId
+    ? 'onclick="window.open(\'/config/automation/edit/' + _aId + '\',\'_blank\');event.stopPropagation();" title="Open automation editor in new tab"'
+    : '';
+  const _copyClick = 'onclick="(function(t){var _l=function(x){try{var a=document.createElement(\'textarea\');a.value=x;a.style.cssText=\'position:fixed;top:-999px;opacity:0\';document.body.appendChild(a);a.focus();a.select();document.execCommand(\'copy\');document.body.removeChild(a);}catch(e){}};if(navigator.clipboard){navigator.clipboard.writeText(t).catch(function(){_l(t);});}else{_l(t);}var p=t.length>45?t.substring(0,45)+\'...\'  :t;var d=document.createElement(\'div\');d.innerText=\'Copied: \'+p;d.style.cssText=\'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 24px;border-radius:24px;font-size:13px;z-index:999999;pointer-events:none;opacity:1;transition:opacity 0.4s ease\';document.body.appendChild(d);setTimeout(function(){d.style.opacity=\'0\';},1200);setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},1650);})(\'' + _aRaw + '\');event.stopPropagation();" title="Click to copy name"';
+  return '<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid #f0f0f0">'
+    + (_aId ? '<span ' + _navClick + ' style="flex-shrink:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:0;width:24px;height:24px;border-radius:8px;background:linear-gradient(145deg,#6A1B9A,#AB47BC);box-shadow:0 2px 6px rgba(106,27,154,0.45)"><ha-icon icon="mdi:pencil-outline" style="--mdc-icon-size:14px;width:14px;height:14px;display:flex;color:#fff"></ha-icon></span>' : '')
+    + '<div style="flex:1;min-width:0">'
+    +   '<div ' + _copyClick + ' style="font-size:11px;color:#333;font-weight:600;line-height:1.4;cursor:pointer;word-break:break-word">' + _aName + '</div>'
+    +   (_secs.length || _cnt > 1 ? '<div style="margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:2px">' + _secBadges + _cntBadge + '</div>' : '')
+    + '</div>'
+    + '</div>';
+}).join("");
+  x += `<tr><td colspan="2" style="padding:5px 10px 4px;border-bottom:2px solid #e0e0e0;background:#fafafa">
+    <div style="border-radius:6px;overflow:hidden;border:1.5px solid ${_autColor}">
+      <div style="background:${_autBg};color:${_autFg};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Used in Automations (${_autList.length})</div>
+      <div style="background:#fff;padding:4px 8px">${_autList.length > 0 ? _autItems + (_autList.length > 8 ? `<div style="font-size:9px;color:#aaa;font-style:italic;padding-top:2px">+${_autList.length - 8} more...</div>` : "") : du}</div>
+    </div>
+  </td></tr>`;
+  if (_.length > 0) {
     x += `<tr><td colspan="2" style="font-size:10px;color:#444;font-weight:bold;padding:5px 10px 3px;border-bottom:1px solid #e0e0e0;background:#f0f4ff">Entities (${_.length}):</td></tr>`;
     const D = Math.min(_.length, 10);
     for (let Z = 0; Z < D; Z++) {

@@ -1,18 +1,17 @@
-# Groups Visualizer 
+# Groups Visualizer
 http://github.com/leonidostrovski/groups-visualizer
 
 A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 
 [![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
 
-Groups Visualizer is a Home Assistant Lovelace card that turns your groups hierarchy into a clear, interactive graph — giving you a complete picture of your smart home hierarchy.
+Groups Visualizer helps you understand your Home Assistant setup at a glance.
 
-- See all groups, subgroups, lights, switches, fans and sensors in one visual map
-- Nodes automatically organized by Home Assistant Area — each area shown as a distinct visual block
-- Area voice assistant names displayed directly on the area block — know exactly what to say to control each room
-- Group voice assistant names shown on every group node — voice aliases always visible
-- Click to toggle entities, click to copy entity IDs, voice names, and aliases
-- Don't guess how your groups connect — see the full picture
+As your smart home grows, groups, rooms, voice names, and automations quickly become hard to follow. What looks simple at first can turn into guesswork later — especially when something stops working the way you expect.
+
+Groups Visualizer turns that complexity into a clear visual map. You can instantly see how your groups are connected, where each group belongs, how it is named for voice control, and where it is being used in automations.
+
+Instead of digging through menus, YAML, and settings screens, you get one place to understand the structure of your home. That makes it easier to spot mistakes, clean up old setups, and build a smarter system with confidence.
 
 ---
 
@@ -52,7 +51,7 @@ show_voice_labels: true
 ```
 <details>
 <summary>Troubleshooting: card not loading?</summary>
-  
+
 Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear
 
 Check that the resource was registered automatically:
@@ -111,14 +110,23 @@ show_voice_labels: true
 - Automatic node height measurement
 - Dagre compound hierarchical layout
 
-### Node Cards
-- Domain color-coded header (LIGHT, SWITCH, GROUP, FAN, SENSOR…)
-- Gear icon → opens entity settings dialog
-- Friendly name and entity ID (click to copy)
-- State badge with live ON/OFF/sensor value + unit of measurement
-- Member entity list with state badges (up to 10 shown)
-- **Group Labels card** — colored chips for assigned HA labels
-- **Group voice assistant card** — voice alias names (click to copy)
+## Node Cards
+
+Each node in the graph is rendered as a compact card that surfaces the most important information about a single group entity at a glance.
+
+A node card includes the following rows, top to bottom:
+
+- **Domain header** — color-coded by domain (LIGHT, SWITCH, GROUP, FAN, SENSOR…). Shows a `Hidden` badge when the entity is hidden in the HA registry.
+- **Gear icon + name / entity ID** — gear icon opens the entity settings dialog. Friendly name and `entity_id` are both clickable to copy.
+- **State badge** — current state (`on` / `off` / sensor value with unit). Clickable to toggle for lights, switches, fans and groups.
+- **Group stats** — number of child groups and direct member entities (e.g. `2 Groups / 5 Entities`).
+- **Group Labels** — colored chips for each HA label assigned to the entity. Shows `None` when no labels are set.
+- **Group voice assistant** — voice aliases from the entity registry (click any alias to copy). For light/switch wrapper pairs, aliases from the paired switch are merged in automatically. Shows `None` when no aliases are configured.
+- **Voice exposure** — shows which voice assistants the entity is exposed to (Alexa, Google, HA Voice), each as a colored chip. Non-exposed assistants appear at reduced opacity. If voice aliases are defined but the entity is not exposed to any assistant, a warning banner is shown.
+- **Used in Automations** — lists every automation that references this group, deduplicated by automation. Each entry shows the automation name (click to copy), section badges (`trigger` / `condition` / `action`) indicating where the group is used, and a ×N count badge if the group appears more than once in the same automation. The pencil icon opens the automation editor in a new browser tab.
+- **Member entities** — up to 10 direct member entities, each showing name, entity ID, and state badge. Displays `+N more` when there are more than 10 members.
+
+All data is read from Home Assistant's registries at render time, so changes in Settings are reflected after a Rebuild without reloading the page.
 
 ### Live Interaction
 - Toggle entities directly from the graph (lights, switches, fans, groups)
