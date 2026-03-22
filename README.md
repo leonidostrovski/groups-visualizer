@@ -5,14 +5,13 @@ A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 
 [![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
 
-Groups Visualizer is a Home Assistant Lovelace card that turns your groups hierarchy into a clear, interactive graph — giving you a complete picture of your smart home hierarchy.
+Groups Visualizer helps you understand your Home Assistant setup at a glance.
 
-- See all groups, subgroups, lights, switches, fans and sensors in one visual map
-- Nodes automatically organized by Home Assistant Area — each area shown as a distinct visual block
-- Area voice assistant names displayed directly on the area block — know exactly what to say to control each room
-- Group voice assistant names shown on every group node — voice aliases always visible
-- Click to toggle entities, click to copy entity IDs, voice names, and aliases
-- Don't guess how your groups connect — see the full picture
+As your smart home grows, groups, rooms, voice names, and automations quickly become hard to follow. What looks simple at first can turn into guesswork later — especially when something stops working the way you expect.
+
+Groups Visualizer turns that complexity into a clear visual map. You can instantly see how your groups are connected, where each group belongs, how it is named for voice control, and where it is being used in automations.
+
+Instead of digging through menus, YAML, and settings screens, you get one place to understand the structure of your home. That makes it easier to spot mistakes, clean up old setups, and build a smarter system with confidence.
 
 ---
 
