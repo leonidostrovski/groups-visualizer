@@ -110,17 +110,22 @@ show_voice_labels: true
 - **Area voice assistant block** — voice aliases shown as chips inside each area box
 - Automatic node height measurement
 - Dagre compound hierarchical layout
+  
+## Node cards
 
-### Node Cards
-- Domain color-coded header (LIGHT, SWITCH, GROUP, FAN, SENSOR…)
-- Gear icon → opens entity settings dialog
-- Friendly name and entity ID (click to copy)
-- State badge with live ON/OFF/sensor value + unit of measurement
-- Member entity list with state badges (up to 10 shown)
-- **Group Labels card** — colored chips for assigned HA labels
-- **Group voice assistant card** — voice alias names (click to copy)
-- **Voice exposure warning** — alert shown when a group has voice aliases but is not exposed to any voice assistant
-- **Used in Automations** — shows which automations reference the group, with count badges (×N) and section badges (trigger / condition / action); click the pencil icon to open the automation editor in a new tab
+Each node in the graph is rendered as a compact “card” that surfaces the most important information about a single Home Assistant entity at a glance.
+
+A node card typically includes:
+
+- **Header row** – Friendly name and domain badge (e.g. light, switch, sensor), with a subtle background color per domain.
+- **Entity ID** – The full `entity_id` shown under the title to make copy‑paste into YAML easy.
+- **State row** – Current state (e.g. `on` / `off` / numeric value) with color highlighting so you can visually scan which entities are active.
+- **Area row** – The assigned Area name, displayed with a dedicated style and 📍 icon when available, or an explicit “No area” indicator when missing.
+- **Voice assistant aliases** – Up to a few aliases used by voice assistants, shown with a 🎤 icon; additional aliases are collapsed behind a `+N more` indicator.
+- **Labels / tags** – Home Assistant labels for the entity, rendered as small 🏷️ pills to help you spot groups of related entities.
+- **Statistics row** – Per‑node stats such as number of direct children, total descendants, and depth inside the tree, which helps identify oversized or deeply nested groups.
+
+All metadata (area, labels, voice aliases) is read from Home Assistant’s registries at render time, so changes in Settings are reflected automatically without rebuilding the graph. When a field is not set for a given entity, the row stays visible with a neutral “none” state instead of disappearing, which makes it easy to see what is missing from your configuration.
 
 ### Live Interaction
 - Toggle entities directly from the graph (lights, switches, fans, groups)
