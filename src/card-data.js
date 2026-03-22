@@ -113,6 +113,64 @@ export async function fetchAllData(hass) {
 
   const registry = { entities, areas, labels, expose };
 
+  // ---------------------------------------------------------------------------
+  // Automation fetching — build a map of entity_id -> list of automations
+  // that reference it, with count (how many times) and sections (trigger /
+  // condition / action).  Uses WS config/automation/list with fallback to
+  // REST config/automation/config/{unique_id} per automation entity.
+  // ---------------------------------------------------------------------------
+  const _autoMap = {};
+
+  function _processAutoConfigs(_autoList) {
+    if (!Array.isArray(_autoList)) return;
+    function _walkSec(obj, sec, _aId, _aName) {
+      const _stk = [obj];
+      while (_stk.length) {
+        const _cur = _stk.pop();
+        if (!_cur || typeof _cur !== 'object') continue;
+        if (Array.isArray(_cur)) { _cur.forEach((_x) => _stk.push(_x)); continue; }
+        for (const [_k, _v2] of Object.entries(_cur)) {
+          if (_k === 'entity_id') {
+            const _eids = Array.isArray(_v2) ? _v2 : (typeof _v2 === 'string' ? [_v2] : []);
+            _eids.forEach((_eid) => {
+              if (typeof _eid !== 'string' || !_eid.includes('.') || /^[0-9a-f]{32}$/i.test(_eid)) return;
+              if (!_autoMap[_eid]) _autoMap[_eid] = [];
+              const _ex = _autoMap[_eid].find((_e3) => _e3.id === _aId);
+              if (_ex) { _ex.count++; if (!_ex.sections.includes(sec)) _ex.sections.push(sec); }
+              else { _autoMap[_eid].push({ id: _aId, name: _aName, count: 1, sections: [sec] }); }
+            });
+          } else if (_v2 && typeof _v2 === 'object') { _stk.push(_v2); }
+        }
+      }
+    }
+    _autoList.forEach((_au) => {
+      if (!_au) return;
+      const _aName = _au.alias || _au.id || '';
+      const _aId   = _au.id   || '';
+      _walkSec(_au.trigger    || _au.triggers    || [], 'trigger',   _aId, _aName);
+      _walkSec(_au.condition  || _au.conditions  || [], 'condition', _aId, _aName);
+      _walkSec(_au.action     || _au.actions     || [], 'action',    _aId, _aName);
+    });
+  }
+
+  // Try WS first (newer HA), fall back to REST per automation entity
+  let _autoList = [];
+  try {
+    const _wsRes = await hass.callWS({ type: 'config/automation/list' });
+    if (Array.isArray(_wsRes)) _autoList = _wsRes;
+  } catch (_wsErr) {
+    console.warn('[groups-visualizer] config/automation/list WS failed, using REST fallback:', _wsErr);
+  }
+  if (_autoList.length === 0) {
+    const _autoEntries = entity_list.filter((_re) => _re.entity_id?.startsWith('automation.') && _re.unique_id);
+    const _configs = await Promise.all(
+      _autoEntries.map((_re) => hass.callApi('GET', 'config/automation/config/' + _re.unique_id).catch(() => null))
+    );
+    _autoList = _configs.filter(Boolean);
+  }
+  _processAutoConfigs(_autoList);
+  registry.automations = _autoMap;
+
   // Update member cache with any member lists visible in current states,
   // then inject cached lists back into entities whose attributes are missing.
   const cache = loadMemberCache();
