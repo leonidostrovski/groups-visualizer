@@ -8153,7 +8153,7 @@ var fq = "0.8.5", lq = {
   },
   version: fq
 };
-const Qp = /* @__PURE__ */ v0(lq), ev = "1.1.2-dev20260321-13r", Cu = 380, Fr = 32, ng = 80, ig = 26, $t = 28, ht = 24, hq = { labels: !1 };
+const Qp = /* @__PURE__ */ v0(lq), ev = "1.1.3", Cu = 380, Fr = 32, ng = 80, ig = 26, $t = 28, ht = 24, hq = { labels: !1 };
 function tv(e) {
   return `<ha-icon icon="mdi:cog-outline"
     style="display:block;margin:0 auto;width:${e}px;height:${e}px;
