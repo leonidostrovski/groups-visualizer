@@ -191,9 +191,13 @@ export function create_node_table(
   // Row 7: Group voice assistant — entity registry aliases, merging paired switch aliases
   const _paired_switch_eid = pairs[eid];
   const _paired_reg = _paired_switch_eid ? ((registry.entities || {})[_paired_switch_eid] || {}) : {};
-  const _paired_aliases = Array.isArray(_paired_reg.aliases) ? _paired_reg.aliases : [];
-  const _all_aliases = [...new Set([...aliases, ..._paired_aliases])];
-  const _hasVoice   = _all_aliases.length > 0;
+  const _paired_aliases_raw = Array.isArray(_paired_reg.aliases) ? _paired_reg.aliases : [];
+  const _aliases_raw = [...new Set([...aliases, ..._paired_aliases_raw])];
+
+  // null in aliases means "Default name" toggle is ON in HA voice settings
+  const _default_name_on = _aliases_raw.includes(null);
+  const _all_aliases = _aliases_raw.filter(a => a != null && a !== '');
+  const _hasVoice = _default_name_on || _all_aliases.length > 0;
   const _hdrBg      = _hasVoice ? '#7B1FA2' : '#e0e0e0';
   const _hdrColor   = _hasVoice ? '#fff'    : '#999';
   const _cardBorder = _hasVoice ? '#7B1FA2' : '#ccc';
@@ -202,7 +206,16 @@ export function create_node_table(
       <div style="background:${_hdrBg};color:${_hdrColor};font-size:9px;font-weight:700;letter-spacing:0.6px;padding:3px 8px">Group voice assistant</div>
       <div style="background:#fff;padding:4px 8px">
         ${_hasVoice
-          ? _all_aliases.map(a => `<div ${_copyclick(a)} style="font-size:12px;color:#000;font-weight:600;cursor:pointer;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDCAC ${_esc(a)}</div>`).join('')
+          ? (_default_name_on
+              ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#E8F5E9;border:1.5px solid #4CAF50;border-radius:6px;padding:2px 8px;margin-bottom:3px;font-size:10px;font-weight:700;color:#2E7D32">
+                  <ha-icon icon="mdi:check-circle" style="--mdc-icon-size:12px;width:12px;height:12px;display:block;color:#2E7D32"></ha-icon>
+                  Default name: ${_esc(name)}
+                </div>`
+              : `<div style="display:inline-flex;align-items:center;gap:5px;background:#FAFAFA;border:1.5px solid #BDBDBD;border-radius:6px;padding:2px 8px;margin-bottom:3px;font-size:10px;font-weight:700;color:#757575">
+                  <ha-icon icon="mdi:close-circle" style="--mdc-icon-size:12px;width:12px;height:12px;display:block;color:#9E9E9E"></ha-icon>
+                  Default name: off
+                </div>`)
+            + _all_aliases.map(a => `<div ${_copyclick(a)} style="font-size:12px;color:#000;font-weight:600;cursor:pointer;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDCAC ${_esc(a)}</div>`).join('')
           : _noneText
         }
       </div>
@@ -234,7 +247,7 @@ export function create_node_table(
   }).join('');
 
   // Voice exposure warning: aliases defined but not exposed to any assistant
-  const _voiceWarning = (_hasVoice && !_hasExpose)
+  const _voiceWarning = (_all_aliases.length > 0 && !_hasExpose)
     ? `<div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding:5px 8px;background:#FFF8E1;border:1.5px solid #FFB300;border-radius:6px">
         <ha-icon icon="mdi:alert" style="--mdc-icon-size:15px;width:15px;height:15px;display:block;flex-shrink:0;color:#F57F17"></ha-icon>
         <span style="font-size:11px;font-weight:700;color:#B71C1C;line-height:1.3">Voice aliases defined but not exposed to any assistant</span>
