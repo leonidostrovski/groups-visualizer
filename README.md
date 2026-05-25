@@ -83,7 +83,7 @@ If it is missing, add it manually:
 4. Set type to **JavaScript module**
 5. Save and hard-refresh (Ctrl+Shift+R)
 
-The `?v=1` forces the browser to load a fresh copy. If you update the card in the future and changes don't appear, increment it to `?v=2`, `?v=3`, and so on.
+The part after `?` can be any text — it is only used as a cache-buster to tell the browser to load a fresh copy. If you update the card and the old version still appears, simply change that text to anything different (e.g. `?v=2`, `?myupdate`, `?2026`) and hard-refresh.
 
 </details>
 
