@@ -5,6 +5,7 @@ A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 
 [![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
 [![GitHub downloads](https://img.shields.io/github/downloads/leonidostrovski/groups-visualizer/total)](https://github.com/leonidostrovski/groups-visualizer/releases)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
 Groups Visualizer helps you understand your Home Assistant setup at a glance.
 
@@ -14,10 +15,18 @@ Groups Visualizer turns that complexity into a clear visual map. You can instant
 
 Instead of digging through menus, YAML, and settings screens, you get one place to understand the structure of your home. That makes it easier to spot mistakes, clean up old setups, and build a smarter system with confidence.
 
+**What you see at a glance:**
+- Which groups contain which groups — visualized as a connected tree
+- Voice aliases and Default name status per group
+- Which automations use each group (trigger / condition / action)
+- Area membership with voice aliases
+- Live ON/OFF state — toggle directly from the graph
+
 ---
 
 ## Screenshots
 ![Demo](screenshots/groups-visualizer-demo.gif)
+
 ---
 
 ## Installation
@@ -50,10 +59,11 @@ type: custom:groups-visualizer
 show_domains: {}
 show_voice_labels: true
 ```
+
 <details>
 <summary>Troubleshooting: card not loading?</summary>
 
-Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear
+Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear.
 
 Check that the resource was registered automatically:
 **Settings → Dashboards → (three dots) → Resources**
@@ -63,7 +73,18 @@ You should see an entry like:
 /hacsfiles/groups-visualizer/groups-visualizer.js?hacstag=...
 ```
 
-If it's missing, try reinstalling via HACS or adding it manually.
+If it is missing, add it manually:
+1. Go to **Settings → Dashboards → Resources**
+2. Click **Add resource**
+3. Enter the URL:
+   ```
+   /hacsfiles/groups-visualizer/groups-visualizer.js?v=1
+   ```
+4. Set type to **JavaScript module**
+5. Save and hard-refresh (Ctrl+Shift+R)
+
+The `?v=1` forces the browser to load a fresh copy. If you update the card in the future and changes don't appear, increment it to `?v=2`, `?v=3`, and so on.
+
 </details>
 
 ---
@@ -100,6 +121,7 @@ show_voice_labels: true
 
 ### Graph Visualization
 - Auto-generated graphs for groups and nested groups
+- Groups containing `platform: template` sensors are fully supported and displayed as connected nodes in the tree
 - Cross-area edge routing with corridor separation
 - Smooth edges and arrowheads
 - Clickable ON/OFF state badges for lights, switches, fans and groups
@@ -122,7 +144,7 @@ A node card includes the following rows, top to bottom:
 - **State badge** — current state (`on` / `off` / sensor value with unit). Clickable to toggle for lights, switches, fans and groups.
 - **Group stats** — number of child groups and direct member entities (e.g. `2 Groups / 5 Entities`).
 - **Group Labels** — colored chips for each HA label assigned to the entity. Shows `None` when no labels are set.
-- **Group voice assistant** — voice aliases from the entity registry (click any alias to copy). For light/switch wrapper pairs, aliases from the paired switch are merged in automatically. Shows `None` when no aliases are configured.
+- **Group voice assistant** — voice aliases from the entity registry (click any alias to copy). Shows whether the Default name toggle is enabled or disabled. For light/switch wrapper pairs, aliases from the paired switch are merged in automatically.
 - **Voice exposure** — shows which voice assistants the entity is exposed to (Alexa, Google, HA Voice), each as a colored chip. Non-exposed assistants appear at reduced opacity. If voice aliases are defined but the entity is not exposed to any assistant, a warning banner is shown.
 - **Used in Automations** — lists every automation that references this group, deduplicated by automation. Each entry shows the automation name (click to copy), section badges (`trigger` / `condition` / `action`) indicating where the group is used, and a ×N count badge if the group appears more than once in the same automation. The pencil icon opens the automation editor in a new browser tab.
 - **Member entities** — up to 10 direct member entities, each showing name, entity ID, and state badge. Displays `+N more` when there are more than 10 members.
