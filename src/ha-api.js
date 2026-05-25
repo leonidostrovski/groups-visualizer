@@ -82,8 +82,17 @@ export function detectWrapperPairs(all_states, entity_registry = {}) {
   // and HA omits the entity_id attribute from their state entirely.  They are
   // still real group nodes — add them to group_ids so that any parent group
   // which lists them as a member is correctly detected as hierarchical.
+  const template_ids = new Set();
   Object.entries(entity_registry).forEach(([eid, reg]) => {
     if (reg.platform === 'group') group_ids.add(eid);
+    if (reg.platform === 'template') template_ids.add(eid);
+  });
+
+  // Add template entities that are referenced as members of a group into group_ids
+  // so graph-layout.js draws edges to them and renders them as nodes.
+  all_states.filter(e => has_entity_list(e)).forEach(g => {
+    const [children] = get_entity_members(g);
+    children.forEach(c => { if (template_ids.has(c)) group_ids.add(c); });
   });
 
   // YAML-configured group.* entities are NOT stored in the entity_registry, so
@@ -111,7 +120,7 @@ export function detectWrapperPairs(all_states, entity_registry = {}) {
 
   groups.forEach(g => {
     const [children] = get_entity_members(g);
-    const hasChildGroups  = children.some(c => group_ids.has(c));
+    const hasChildGroups  = children.some(c => group_ids.has(c) || template_ids.has(c));
     const isWrappedSwitch = wrapped_switch_ids.has(g.entity_id);
     if (hasChildGroups || isWrappedSwitch) hierarchical.push(g);
   });
