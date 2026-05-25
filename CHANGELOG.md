@@ -5,6 +5,14 @@ This project follows semantic versioning: MAJOR.MINOR.PATCH
 
 ---
 
+## [1.2.0] - 2026-05-25
+
+### Added
+- **Template sensor groups** — groups containing `platform: template` entities as members are now detected and displayed in the tree, with arrows connecting them like any other group node.
+- **Voice assistant small improvements** — the Default name toggle state is now displayed correctly as a badge; the voice warning no longer triggers when only the default name is enabled.
+
+---
+
 ## [1.1.3] - 2026-03-22
 
 ### Added
