@@ -34,7 +34,7 @@ export class GroupsGraph {
 
     this.svgG = this.svg.append('g');
 
-    // -- SVG 2: edges only — absolutely on top, pointer-events: none -------
+    // -- SVG 2: edges only â€” absolutely on top, pointer-events: none -------
     // Because foreignObject HTML always composites above SVG siblings,
     // the ONLY reliable way to draw edges on top of nodes is a separate
     // SVG element layered via CSS z-index / absolute positioning.
