@@ -1,11 +1,9 @@
 # Groups Visualizer
-http://github.com/leonidostrovski/groups-visualizer
-
 A Home Assistant Lovelace Card for Visualizing Groups and Hierarchies
 
 [![GitHub release](https://img.shields.io/github/v/release/leonidostrovski/groups-visualizer)](https://github.com/leonidostrovski/groups-visualizer/releases/latest)
 [![GitHub downloads](https://img.shields.io/github/downloads/leonidostrovski/groups-visualizer/total)](https://github.com/leonidostrovski/groups-visualizer/releases)
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
 Groups Visualizer helps you understand your Home Assistant setup at a glance.
 
