@@ -58,10 +58,8 @@ show_domains: {}
 show_voice_labels: true
 ```
 
-> [!WARNING]
-> **Troubleshooting: card not loading?**
 <details>
-<summary>Click to expand</summary>
+<summary><h3>🔴 Troubleshooting: card not loading?</h3></summary>
 
 Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear.
 
