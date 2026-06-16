@@ -59,7 +59,7 @@ show_voice_labels: true
 ```
 
 <details>
-<summary>Troubleshooting: card not loading?</summary>
+<summary><b style="color: red;">⚠ Troubleshooting: card not loading?</b></summary>
 
 Hard-refresh your browser (Ctrl+Shift+R / Cmd+Shift+R) if the card doesn't appear.
 
